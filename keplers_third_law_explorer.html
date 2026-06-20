@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kepler's Third Law Explorer</title>
+<style>
+  :root{
+    --bg:#070b16;
+    --panel:#0f1830;
+    --panel-border:#1f2d4d;
+    --text:#dfe7f5;
+    --text-dim:#8492b3;
+    --accent:#5ee7ff;
+    --accent-dim:#5ee7ff66;
+    --warn:#ffb454;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background-color:var(--bg);
+    background-image:
+      radial-gradient(1px 1px at 15% 22%, #ffffff55 1px, transparent 0),
+      radial-gradient(1px 1px at 78% 12%, #ffffff44 1px, transparent 0),
+      radial-gradient(1px 1px at 35% 65%, #ffffff33 1px, transparent 0),
+      radial-gradient(1px 1px at 60% 80%, #ffffff55 1px, transparent 0),
+      radial-gradient(1px 1px at 90% 45%, #ffffff33 1px, transparent 0),
+      radial-gradient(1px 1px at 8% 88%, #ffffff44 1px, transparent 0);
+    background-size:340px 340px;
+    color:var(--text);
+    font-family:var(--sans);
+    -webkit-font-smoothing:antialiased;
+    padding:28px 20px 60px;
+  }
+  .wrap{max-width:1180px;margin:0 auto;}
+  header{margin-bottom:22px;}
+  .eyebrow{
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:0.18em;
+    text-transform:uppercase;
+    color:var(--accent);
+    margin:0 0 8px;
+  }
+  h1{
+    font-size:clamp(24px,4vw,34px);
+    margin:0 0 8px;
+    font-weight:650;
+    letter-spacing:-0.01em;
+  }
+  .sub{color:var(--text-dim);max-width:640px;line-height:1.5;font-size:14.5px;margin:0;}
+
+  .selector{
+    background:var(--panel);
+    border:1px solid var(--panel-border);
+    border-radius:14px;
+    padding:14px 16px;
+    margin-bottom:18px;
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    gap:10px;
+  }
+  .preset-group{display:flex;gap:6px;margin-right:8px;}
+  .btn{
+    font-family:var(--sans);
+    font-size:12.5px;
+    font-weight:600;
+    color:var(--text-dim);
+    background:#101b35;
+    border:1px solid var(--panel-border);
+    border-radius:8px;
+    padding:7px 12px;
+    cursor:pointer;
+    transition:color .15s, border-color .15s, background .15s;
+  }
+  .btn:hover{color:var(--text);border-color:#33466e;}
+  .btn.active{color:#04222b;background:var(--accent);border-color:var(--accent);}
+  .btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+  .divider{width:1px;height:22px;background:var(--panel-border);margin:0 4px;}
+
+  .pills{display:flex;flex-wrap:wrap;gap:6px;flex:1;}
+  .pill{
+    display:flex;align-items:center;gap:6px;
+    font-family:var(--mono);
+    font-size:12px;
+    padding:6px 10px 6px 8px;
+    border-radius:999px;
+    border:1px solid var(--panel-border);
+    background:#0b1226;
+    color:var(--text-dim);
+    cursor:pointer;
+    user-select:none;
+    transition:all .15s;
+  }
+  .pill .dot{width:9px;height:9px;border-radius:50%;background:var(--c);box-shadow:0 0 0 2px transparent;flex:none;}
+  .pill.active{color:var(--text);border-color:var(--c);background:color-mix(in srgb, var(--c) 16%, #0b1226);}
+  .pill.active .dot{box-shadow:0 0 8px var(--c);}
+  .pill:hover{color:var(--text);}
+  .pill:focus-visible{outline:2px solid var(--accent);outline-offset:1px;}
+
+  .main{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start;}
+  .card{
+    min-width:0;
+    background:var(--panel);
+    border:1px solid var(--panel-border);
+    border-radius:14px;
+    padding:16px 18px 14px;
+  }
+  .card-head{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px;}
+  .card-title{font-size:14px;font-weight:650;margin:0;}
+  .card-note{font-family:var(--mono);font-size:10.5px;color:var(--text-dim);margin:0;}
+  .toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px;}
+
+  svg{width:100%;height:auto;display:block;aspect-ratio:1/1;}
+  .ring{fill:none;stroke:#1f2d4d;stroke-width:1;}
+  .ring-label{fill:var(--text-dim);font-family:var(--mono);font-size:10px;}
+  .sun{fill:#ffd98a;filter:drop-shadow(0 0 8px #ffd98aaa);}
+  .orbit-path{fill:none;stroke-width:1.2;opacity:0.35;}
+  .planet-marker{cursor:pointer;stroke:#070b16;stroke-width:1.5;transition:r .15s;}
+  .planet-marker.highlight{stroke:var(--accent);stroke-width:2.5;}
+  .planet-marker.highlight{r:var(--hr, 10);}
+
+  .axis-line{stroke:#33466e;stroke-width:1.2;}
+  .grid-line{stroke:#1a2745;stroke-width:1;}
+  .tick-label{fill:var(--text-dim);font-family:var(--mono);font-size:10.5px;}
+  .axis-title{fill:var(--text-dim);font-family:var(--mono);font-size:11px;letter-spacing:0.04em;}
+  .theory-line{fill:none;stroke:var(--warn);stroke-width:1.6;stroke-dasharray:5 5;opacity:0.8;}
+  .graph-point{cursor:pointer;stroke:#070b16;stroke-width:1.5;}
+  .graph-point.highlight{stroke:var(--accent);stroke-width:2.5;}
+  .graph-label{fill:var(--text);font-family:var(--mono);font-size:10.5px;pointer-events:none;}
+
+  .readout{
+    margin-top:8px;
+    background:#0b1226;
+    border:1px solid var(--panel-border);
+    border-radius:8px;
+    padding:9px 12px;
+    font-family:var(--mono);
+    font-size:12px;
+    color:var(--text-dim);
+    min-height:18px;
+  }
+  .readout b{color:var(--text);font-weight:650;}
+  .readout .val{color:var(--accent);}
+
+  .anim-controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px;}
+  .anim-controls input[type=range]{flex:1;min-width:90px;accent-color:var(--accent);}
+  .clock{font-family:var(--mono);font-size:11.5px;color:var(--text-dim);white-space:nowrap;}
+  .clock b{color:var(--text);}
+  .checkrow{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:11.5px;color:var(--text-dim);cursor:pointer;}
+  .checkrow input{accent-color:var(--warn);}
+
+  footer{margin-top:22px;color:var(--text-dim);font-size:11.5px;line-height:1.6;}
+  footer code{font-family:var(--mono);color:var(--accent);}
+
+  @media (max-width:640px){
+    .main{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <p class="eyebrow">Orbital Mechanics Lab</p>
+    <h1>Kepler's Third Law Explorer</h1>
+    <p class="sub">Select planets below. Watch them orbit on the right and land on the graph on the left — then switch the graph to T² vs a³ and watch a curve become a straight line.</p>
+  </header>
+
+  <div class="selector">
+    <div class="preset-group">
+      <button class="btn" data-preset="inner">Inner</button>
+      <button class="btn" data-preset="outer">Outer</button>
+      <button class="btn" data-preset="all">All</button>
+    </div>
+    <div class="divider"></div>
+    <div class="pills" id="pillRow"></div>
+  </div>
+
+  <div class="main">
+
+    <div class="card">
+      <div class="card-head">
+        <p class="card-title">T vs a relationship</p>
+        <p class="card-note">data: semi-major axis (AU) &amp; period (yr)</p>
+      </div>
+      <div class="toolbar">
+        <button class="btn active" data-mode="linear">T vs a</button>
+        <button class="btn" data-mode="squared">T² vs a³</button>
+        <label class="checkrow" style="margin-left:auto;">
+          <input type="checkbox" id="theoryToggle" checked>
+          show theoretical curve
+        </label>
+      </div>
+      <svg id="graphSvg" viewBox="0 0 600 600"></svg>
+      <div class="readout" id="graphReadout">Hover or tap a planet to inspect its numbers.</div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <p class="card-title">Live orbits</p>
+        <p class="card-note">circular approx., not to scale by planet size</p>
+      </div>
+      <div class="toolbar">
+        <label class="checkrow">
+          <input type="checkbox" id="scaleToggle" checked>
+          show distance scale
+        </label>
+        <label class="checkrow">
+          <input type="checkbox" id="compressToggle" checked>
+          compress scale (√a)
+        </label>
+      </div>
+      <svg id="orbitSvg" viewBox="0 0 600 600"></svg>
+      <div class="anim-controls">
+        <button class="btn" id="playBtn">Pause</button>
+        <button class="btn" id="resetBtn">Reset</button>
+        <input type="range" id="speedSlider" min="0.1" max="40" step="0.1" value="0.4">
+        <span class="clock" id="speedLabel">0.4 yr/sec</span>
+      </div>
+      <div class="clock" style="margin-top:6px;">Elapsed: <b id="clockLabel">0.0 yr</b></div>
+    </div>
+
+  </div>
+
+  <footer>
+    Orbits are treated as circular at each planet's semi-major axis, since real eccentricities are too small to see at this scale (except Mercury &amp; Mars, which are slightly exaggerated visually here). In AU/year units, Kepler's constant is 1, so the T² vs a³ line has slope 1 — that's <code>k</code> for our solar system.
+  </footer>
+</div>
+
+<script>
+const PLANETS = [
+  {id:'mercury', name:'Mercury', a:0.387,  T:0.241,  color:'#b8b0a4', r:4},
+  {id:'venus',   name:'Venus',   a:0.723,  T:0.615,  color:'#e6c79c', r:5.5},
+  {id:'earth',   name:'Earth',   a:1.000,  T:1.000,  color:'#4da3e0', r:5.5},
+  {id:'mars',    name:'Mars',    a:1.524,  T:1.881,  color:'#d1603f', r:4.5},
+  {id:'jupiter', name:'Jupiter', a:5.203,  T:11.862, color:'#d8a35d', r:9.5},
+  {id:'saturn',  name:'Saturn',  a:9.537,  T:29.457, color:'#e3cd96', r:9},
+  {id:'uranus',  name:'Uranus',  a:19.191, T:84.011, color:'#8fdada', r:7.5},
+  {id:'neptune', name:'Neptune', a:30.069, T:164.79, color:'#5277e0', r:7.5},
+];
+const byId = id => PLANETS.find(p=>p.id===id);
+const INNER = ['mercury','venus','earth','mars'];
+const OUTER = ['jupiter','saturn','uranus','neptune'];
+
+let state = {
+  selected: new Set(PLANETS.map(p=>p.id)),
+  mode: 'linear',
+  showTheory: true,
+  showScale: true,
+  compress: true,
+  playing: true,
+  rate: 0.4,
+  elapsed: 0,
+  angle: {}
+};
+PLANETS.forEach(p => state.angle[p.id] = -Math.PI/2);
+
+let hoverId = null;
+let orbitRadii = {};   // id -> pixel radius (for animation loop)
+
+// ---------- helpers ----------
+function formatNum(x){
+  if(x===0) return '0';
+  if(Math.abs(x) >= 100) return x.toFixed(0);
+  if(Math.abs(x) >= 1) return x.toFixed(2);
+  return x.toFixed(3);
+}
+function formatTick(x){
+  if(x===0) return '0';
+  return parseFloat(x.toFixed(2)).toString();
+}
+function dataPoint(p, mode){
+  return mode === 'linear' ? {x:p.a, y:p.T} : {x:Math.pow(p.a,3), y:Math.pow(p.T,2)};
+}
+function niceStep(rawMax, targetTicks=5){
+  const raw = rawMax/targetTicks;
+  const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+  const norm = raw/mag;
+  let step;
+  if(norm < 1.5) step = 1;
+  else if(norm < 3.5) step = 2;
+  else if(norm < 7.5) step = 5;
+  else step = 10;
+  return step*mag;
+}
+function easeInOutCubic(t){ return t<0.5 ? 4*t*t*t : 1-Math.pow(-2*t+2,3)/2; }
+function selectedList(){ return PLANETS.filter(p=>state.selected.has(p.id)); }
+
+function setHover(id){
+  hoverId = id;
+  document.querySelectorAll('.highlight').forEach(el=>el.classList.remove('highlight'));
+  if(id){
+    const a = document.getElementById('orbit-'+id);
+    const b = document.getElementById('graph-'+id);
+    if(a) a.classList.add('highlight');
+    if(b) b.classList.add('highlight');
+    const p = byId(id);
+    const d3 = Math.pow(p.a,3), T2 = Math.pow(p.T,2);
+    document.getElementById('graphReadout').innerHTML =
+      `<b>${p.name}</b> &middot; a = <span class="val">${formatNum(p.a)}</span> AU &middot; T = <span class="val">${formatNum(p.T)}</span> yr `+
+      `&middot; a&sup3; = <span class="val">${formatNum(d3)}</span> &middot; T&sup2; = <span class="val">${formatNum(T2)}</span>`;
+  } else {
+    document.getElementById('graphReadout').textContent = 'Hover or tap a planet to inspect its numbers.';
+  }
+}
+
+// ---------- pill selector ----------
+const pillRow = document.getElementById('pillRow');
+PLANETS.forEach(p=>{
+  const el = document.createElement('div');
+  el.className = 'pill active';
+  el.style.setProperty('--c', p.color);
+  el.dataset.id = p.id;
+  el.innerHTML = `<span class="dot"></span>${p.name}`;
+  el.addEventListener('click', ()=>{
+    if(state.selected.has(p.id)) state.selected.delete(p.id);
+    else state.selected.add(p.id);
+    el.classList.toggle('active');
+    applySelectionDefaults();
+    rebuildAll();
+  });
+  el.addEventListener('mouseenter', ()=>setHover(p.id));
+  el.addEventListener('mouseleave', ()=>setHover(null));
+  pillRow.appendChild(el);
+});
+
+function syncPills(){
+  document.querySelectorAll('.pill').forEach(el=>{
+    el.classList.toggle('active', state.selected.has(el.dataset.id));
+  });
+}
+
+// Default rate & compression depend on what kind of mix is currently selected,
+// regardless of whether that mix came from a preset or hand-picked pills.
+const COMPOSITION_DEFAULTS = {
+  inner:  { rate: 0.1, compress: false },
+  outer:  { rate: 10,  compress: false },
+  mixed:  { rate: 0.4, compress: true  },
+};
+
+function selectionComposition(){
+  const hasInner = INNER.some(id => state.selected.has(id));
+  const hasOuter = OUTER.some(id => state.selected.has(id));
+  if(hasInner && hasOuter) return 'mixed';
+  if(hasInner) return 'inner';
+  if(hasOuter) return 'outer';
+  return null; // nothing selected
+}
+
+function applySelectionDefaults(){
+  const comp = selectionComposition();
+  if(!comp) return;
+  const d = COMPOSITION_DEFAULTS[comp];
+  state.rate = d.rate;
+  speedSlider.value = state.rate;
+  speedLabel.textContent = state.rate.toFixed(1) + ' yr/sec';
+  state.compress = d.compress;
+  document.getElementById('compressToggle').checked = state.compress;
+}
+
+document.querySelectorAll('[data-preset]').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    const preset = btn.dataset.preset;
+    const ids = preset === 'inner' ? INNER : preset === 'outer' ? OUTER : PLANETS.map(p=>p.id);
+    state.selected = new Set(ids);
+    syncPills();
+    applySelectionDefaults();
+    rebuildAll();
+  });
+});
+
+// ---------- mode / theory toggles ----------
+document.querySelectorAll('[data-mode]').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('[data-mode]').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    state.mode = btn.dataset.mode;
+    buildGraph();
+  });
+});
+document.getElementById('theoryToggle').addEventListener('change', e=>{
+  state.showTheory = e.target.checked;
+  buildGraph();
+});
+document.getElementById('scaleToggle').addEventListener('change', e=>{
+  state.showScale = e.target.checked;
+  buildOrbit();
+});
+document.getElementById('compressToggle').addEventListener('change', e=>{
+  state.compress = e.target.checked;
+  buildOrbit();
+});
+
+// ---------- orbit panel ----------
+let orbitCenterY = 300;
+
+function buildOrbit(){
+  const svg = document.getElementById('orbitSvg');
+  const sel = selectedList();
+  const maxA = sel.length ? Math.max(...sel.map(p=>p.a)) : 30.069;
+  const plotR = state.showScale ? 205 : 250;
+  orbitCenterY = state.showScale ? 250 : 300;
+  const compress = state.compress;
+  const maxMapped = compress ? Math.sqrt(maxA) : maxA;
+  function radiusPx(aVal){ return ((compress ? Math.sqrt(aVal) : aVal)/maxMapped)*plotR; }
+  const step = niceStep(maxA, 4);
+  let html = '';
+
+  for(let t = step; t <= maxA*1.02; t += step){
+    const r = radiusPx(t);
+    html += `<circle cx="300" cy="${orbitCenterY}" r="${r}" class="ring"></circle>`;
+  }
+  html += `<circle cx="300" cy="${orbitCenterY}" r="14" class="sun"></circle>`;
+  sel.forEach(p=>{
+    const r = radiusPx(p.a);
+    orbitRadii[p.id] = r;
+    const ang = state.angle[p.id];
+    const x = 300 + r*Math.cos(ang), y = orbitCenterY + r*Math.sin(ang);
+    html += `<circle cx="300" cy="${orbitCenterY}" r="${r}" class="orbit-path" style="stroke:${p.color}"></circle>`;
+    html += `<circle id="orbit-${p.id}" cx="${x}" cy="${y}" r="${p.r}" class="planet-marker" style="fill:${p.color};--hr:${p.r+3}"></circle>`;
+  });
+
+  if(state.showScale){
+    const axisY = orbitCenterY + plotR + 45;
+    html += `<line x1="300" y1="${axisY}" x2="${300+plotR}" y2="${axisY}" class="axis-line"></line>`;
+    html += `<line x1="300" y1="${axisY-5}" x2="300" y2="${axisY+5}" class="axis-line"></line>`;
+    html += `<text x="300" y="${axisY+20}" class="tick-label" text-anchor="middle">0</text>`;
+    for(let t = step; t <= maxA*1.02; t += step){
+      const tx = 300 + radiusPx(t);
+      html += `<line x1="${tx}" y1="${axisY-5}" x2="${tx}" y2="${axisY+5}" class="axis-line"></line>`;
+      html += `<text x="${tx}" y="${axisY+20}" class="tick-label" text-anchor="middle">${formatTick(t)}</text>`;
+    }
+    const axisCaption = compress ? 'distance from Sun (AU) — compressed (\u221aa) scale' : 'distance from Sun (AU)';
+    html += `<text x="${300+plotR/2}" y="${axisY+38}" class="axis-title" text-anchor="middle">${axisCaption}</text>`;
+  }
+
+  svg.innerHTML = html;
+  sel.forEach(p=>{
+    const el = document.getElementById('orbit-'+p.id);
+    el.addEventListener('mouseenter', ()=>setHover(p.id));
+    el.addEventListener('mouseleave', ()=>setHover(null));
+    el.addEventListener('click', ()=>setHover(p.id));
+  });
+}
+
+function updateOrbitPositions(){
+  selectedList().forEach(p=>{
+    const el = document.getElementById('orbit-'+p.id);
+    if(!el) return;
+    const r = orbitRadii[p.id];
+    const ang = state.angle[p.id];
+    el.setAttribute('cx', 300 + r*Math.cos(ang));
+    el.setAttribute('cy', orbitCenterY + r*Math.sin(ang));
+  });
+}
+
+// ---------- graph panel ----------
+function buildGraph(){
+  const svg = document.getElementById('graphSvg');
+  const sel = selectedList();
+  const basis = sel.length ? sel : PLANETS;
+
+  // capture old pixel positions for tween
+  const oldPos = {};
+  PLANETS.forEach(p=>{
+    const el = document.getElementById('graph-'+p.id);
+    if(el) oldPos[p.id] = {x:parseFloat(el.getAttribute('cx')), y:parseFloat(el.getAttribute('cy'))};
+  });
+
+  const pts = basis.map(p => ({p, ...dataPoint(p, state.mode)}));
+  const rawMaxX = Math.max(...pts.map(d=>d.x));
+  const rawMaxY = Math.max(...pts.map(d=>d.y));
+  const stepX = niceStep(rawMaxX), stepY = niceStep(rawMaxY);
+  const maxX = Math.ceil((rawMaxX*1.08)/stepX)*stepX;
+  const maxY = Math.ceil((rawMaxY*1.08)/stepY)*stepY;
+
+  const left=72, right=560, top=36, bottom=520;
+  const plotW = right-left, plotH = bottom-top;
+  function toPx(x,y){ return { x:left + (x/maxX)*plotW, y: bottom - (y/maxY)*plotH }; }
+
+  let html = `<line x1="${left}" y1="${bottom}" x2="${right}" y2="${bottom}" class="axis-line"></line>`;
+  html += `<line x1="${left}" y1="${top}" x2="${left}" y2="${bottom}" class="axis-line"></line>`;
+
+  for(let t=0; t<=maxX+1e-9; t+=stepX){
+    const px = left + (t/maxX)*plotW;
+    html += `<line x1="${px}" y1="${top}" x2="${px}" y2="${bottom}" class="grid-line"></line>`;
+    html += `<text x="${px}" y="${bottom+18}" class="tick-label" text-anchor="middle">${formatTick(t)}</text>`;
+  }
+  for(let t=0; t<=maxY+1e-9; t+=stepY){
+    const py = bottom - (t/maxY)*plotH;
+    html += `<line x1="${left}" y1="${py}" x2="${right}" y2="${py}" class="grid-line"></line>`;
+    html += `<text x="${left-8}" y="${py+3}" class="tick-label" text-anchor="end">${formatTick(t)}</text>`;
+  }
+
+  const xLabel = state.mode === 'linear' ? 'semi-major axis, a (AU)' : 'a\u00b3 (AU\u00b3)';
+  const yLabel = state.mode === 'linear' ? 'period, T (yr)' : 'T\u00b2 (yr\u00b2)';
+  html += `<text x="${(left+right)/2}" y="${bottom+40}" class="axis-title" text-anchor="middle">${xLabel}</text>`;
+  html += `<text x="20" y="${(top+bottom)/2}" class="axis-title" text-anchor="middle" transform="rotate(-90 20 ${(top+bottom)/2})">${yLabel}</text>`;
+
+  if(state.showTheory){
+    const N = 60;
+    let d = '';
+    for(let i=0;i<=N;i++){
+      const x = (i/N)*maxX;
+      const yRaw = state.mode === 'linear' ? Math.pow(x, 1.5) : x;
+      if(yRaw > maxY) break;
+      const px = toPx(x,yRaw);
+      d += (i===0 ? 'M' : 'L') + px.x.toFixed(1) + ' ' + px.y.toFixed(1) + ' ';
+    }
+    html += `<path d="${d}" class="theory-line"></path>`;
+  }
+
+  const targets = {};
+  sel.forEach(p=>{
+    const d = dataPoint(p, state.mode);
+    const px = toPx(d.x, d.y);
+    targets[p.id] = px;
+    const start = oldPos[p.id] || px;
+    html += `<circle id="graph-${p.id}" cx="${start.x}" cy="${start.y}" r="6.5" class="graph-point" style="fill:${p.color}"></circle>`;
+    html += `<text id="graph-label-${p.id}" x="${start.x+9}" y="${start.y-8}" class="graph-label">${p.name}</text>`;
+  });
+
+  svg.innerHTML = html;
+
+  sel.forEach(p=>{
+    const el = document.getElementById('graph-'+p.id);
+    el.addEventListener('mouseenter', ()=>setHover(p.id));
+    el.addEventListener('mouseleave', ()=>setHover(null));
+    el.addEventListener('click', ()=>setHover(p.id));
+  });
+
+  // tween into place
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const duration = reduceMotion ? 0 : 650;
+  const startTime = performance.now();
+  const starts = {};
+  sel.forEach(p=> starts[p.id] = oldPos[p.id] || targets[p.id]);
+  function step(now){
+    const t = duration===0 ? 1 : Math.min(1, (now-startTime)/duration);
+    const e = easeInOutCubic(t);
+    sel.forEach(p=>{
+      const el = document.getElementById('graph-'+p.id);
+      const lbl = document.getElementById('graph-label-'+p.id);
+      if(!el) return;
+      const s = starts[p.id], tg = targets[p.id];
+      const x = s.x + (tg.x-s.x)*e, y = s.y + (tg.y-s.y)*e;
+      el.setAttribute('cx', x); el.setAttribute('cy', y);
+      if(lbl){ lbl.setAttribute('x', x+9); lbl.setAttribute('y', y-8); }
+    });
+    if(t<1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+function rebuildAll(){ buildOrbit(); buildGraph(); }
+
+// ---------- animation controls ----------
+const playBtn = document.getElementById('playBtn');
+const resetBtn = document.getElementById('resetBtn');
+const speedSlider = document.getElementById('speedSlider');
+const speedLabel = document.getElementById('speedLabel');
+const clockLabel = document.getElementById('clockLabel');
+
+playBtn.addEventListener('click', ()=>{
+  state.playing = !state.playing;
+  playBtn.textContent = state.playing ? 'Pause' : 'Play';
+});
+resetBtn.addEventListener('click', ()=>{
+  state.elapsed = 0;
+  PLANETS.forEach(p=> state.angle[p.id] = -Math.PI/2);
+  updateOrbitPositions();
+  clockLabel.textContent = '0.0 yr';
+});
+speedSlider.addEventListener('input', e=>{
+  state.rate = parseFloat(e.target.value);
+  speedLabel.textContent = state.rate.toFixed(1) + ' yr/sec';
+});
+
+let lastTs = null;
+function frame(ts){
+  if(lastTs===null) lastTs = ts;
+  const dt = (ts-lastTs)/1000;
+  lastTs = ts;
+  if(state.playing){
+    const dy = dt*state.rate;
+    state.elapsed += dy;
+    PLANETS.forEach(p=> state.angle[p.id] += dy*(2*Math.PI/p.T));
+    updateOrbitPositions();
+    clockLabel.textContent = state.elapsed.toFixed(1) + ' yr';
+  }
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+// ---------- init ----------
+applySelectionDefaults();
+rebuildAll();
+</script>
+</body>
+</html>
