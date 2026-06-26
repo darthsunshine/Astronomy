@@ -14,6 +14,9 @@
     --accent:#5ee7ff;
     --accent-dim:#5ee7ff66;
     --warn:#ffb454;
+    --nu-purple:#4E2A84;
+    --nu-purple-light:#836EAA;
+    --nu-purple-dark:#401F68;
     --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
     --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   }
@@ -32,9 +35,27 @@
     color:var(--text);
     font-family:var(--sans);
     -webkit-font-smoothing:antialiased;
-    padding:28px 20px 60px;
   }
-  .wrap{max-width:1180px;margin:0 auto;}
+  .nu-banner{
+    background:var(--nu-purple);
+    color:#fff;
+    padding:13px 24px;
+    display:flex;
+    align-items:baseline;
+    gap:10px;
+    flex-wrap:wrap;
+  }
+  .nu-wordmark{
+    font-weight:700;
+    font-size:14px;
+    letter-spacing:0.06em;
+    text-transform:uppercase;
+  }
+  .nu-dept{
+    font-size:12px;
+    color:#d9cdec;
+  }
+  .wrap{max-width:1180px;margin:0 auto;padding:28px 20px 60px;}
   header{margin-bottom:22px;}
   .eyebrow{
     font-family:var(--mono);
@@ -154,7 +175,6 @@
   .checkrow input{accent-color:var(--warn);}
 
   footer{margin-top:22px;color:var(--text-dim);font-size:11.5px;line-height:1.6;}
-  footer code{font-family:var(--mono);color:var(--accent);}
 
   @media (max-width:640px){
     .main{grid-template-columns:1fr;}
@@ -162,12 +182,16 @@
 </style>
 </head>
 <body>
+<div class="nu-banner">
+  <span class="nu-wordmark">Northwestern University</span>
+  <span class="nu-dept">Department of Physics &amp; Astronomy</span>
+</div>
 <div class="wrap">
 
   <header>
     <p class="eyebrow">Orbital Mechanics Lab</p>
     <h1>Kepler's Third Law Explorer</h1>
-    <p class="sub">Select planets below. Watch them orbit on the right and land on the graph on the left — then switch the graph to T² vs a³ and watch a curve become a straight line.</p>
+    <p class="sub">Select planets below. Watch them orbit on the right and land on the graph on the left — then switch the graph to <i>T</i>² vs <i>a</i>³ and watch a curve become a straight line.</p>
   </header>
 
   <div class="selector">
@@ -184,12 +208,12 @@
 
     <div class="card">
       <div class="card-head">
-        <p class="card-title">T vs a relationship</p>
+        <p class="card-title"><i>T</i> vs <i>a</i> relationship</p>
         <p class="card-note">data: semi-major axis (AU) &amp; period (yr)</p>
       </div>
       <div class="toolbar">
-        <button class="btn active" data-mode="linear">T vs a</button>
-        <button class="btn" data-mode="squared">T² vs a³</button>
+        <button class="btn active" data-mode="linear"><i>T</i> vs <i>a</i></button>
+        <button class="btn" data-mode="squared"><i>T</i>&sup2; vs <i>a</i>&sup3;</button>
         <label class="checkrow" style="margin-left:auto;">
           <input type="checkbox" id="theoryToggle" checked>
           show theoretical curve
@@ -211,7 +235,7 @@
         </label>
         <label class="checkrow">
           <input type="checkbox" id="compressToggle" checked>
-          compress scale (√a)
+          compress scale (√<i>a</i>)
         </label>
       </div>
       <svg id="orbitSvg" viewBox="0 0 600 600"></svg>
@@ -227,7 +251,7 @@
   </div>
 
   <footer>
-    Orbits are treated as circular at each planet's semi-major axis, since real eccentricities are too small to see at this scale (except Mercury &amp; Mars, which are slightly exaggerated visually here). In AU/year units, Kepler's constant is 1, so the T² vs a³ line has slope 1 — that's <code>k</code> for our solar system.
+    Orbits are treated as circular at each planet's semi-major axis, since real eccentricities are too small to see at this scale (except Mercury &amp; Mars, which are slightly exaggerated visually here). In AU/year units, Kepler's constant is 1, so the <i>T</i>² vs <i>a</i>³ line has slope 1 — that's <i>k</i> for our solar system.
   </footer>
 </div>
 
@@ -301,8 +325,8 @@ function setHover(id){
     const p = byId(id);
     const d3 = Math.pow(p.a,3), T2 = Math.pow(p.T,2);
     document.getElementById('graphReadout').innerHTML =
-      `<b>${p.name}</b> &middot; a = <span class="val">${formatNum(p.a)}</span> AU &middot; T = <span class="val">${formatNum(p.T)}</span> yr `+
-      `&middot; a&sup3; = <span class="val">${formatNum(d3)}</span> &middot; T&sup2; = <span class="val">${formatNum(T2)}</span>`;
+      `<b>${p.name}</b> &middot; <i>a</i> = <span class="val">${formatNum(p.a)}</span> AU &middot; <i>T</i> = <span class="val">${formatNum(p.T)}</span> yr `+
+      `&middot; <i>a</i>&sup3; = <span class="val">${formatNum(d3)}</span> &middot; <i>T</i>&sup2; = <span class="val">${formatNum(T2)}</span>`;
   } else {
     document.getElementById('graphReadout').textContent = 'Hover or tap a planet to inspect its numbers.';
   }
@@ -434,7 +458,7 @@ function buildOrbit(){
       html += `<line x1="${tx}" y1="${axisY-5}" x2="${tx}" y2="${axisY+5}" class="axis-line"></line>`;
       html += `<text x="${tx}" y="${axisY+20}" class="tick-label" text-anchor="middle">${formatTick(t)}</text>`;
     }
-    const axisCaption = compress ? 'distance from Sun (AU) — compressed (\u221aa) scale' : 'distance from Sun (AU)';
+    const axisCaption = compress ? 'distance from Sun (AU) — compressed (\u221a<tspan font-style="italic">a</tspan>) scale' : 'distance from Sun (AU)';
     html += `<text x="${300+plotR/2}" y="${axisY+38}" class="axis-title" text-anchor="middle">${axisCaption}</text>`;
   }
 
@@ -496,8 +520,8 @@ function buildGraph(){
     html += `<text x="${left-8}" y="${py+3}" class="tick-label" text-anchor="end">${formatTick(t)}</text>`;
   }
 
-  const xLabel = state.mode === 'linear' ? 'semi-major axis, a (AU)' : 'a\u00b3 (AU\u00b3)';
-  const yLabel = state.mode === 'linear' ? 'period, T (yr)' : 'T\u00b2 (yr\u00b2)';
+  const xLabel = state.mode === 'linear' ? 'semi-major axis, <tspan font-style="italic">a</tspan> (AU)' : '<tspan font-style="italic">a</tspan>\u00b3 (AU\u00b3)';
+  const yLabel = state.mode === 'linear' ? 'period, <tspan font-style="italic">T</tspan> (yr)' : '<tspan font-style="italic">T</tspan>\u00b2 (yr\u00b2)';
   html += `<text x="${(left+right)/2}" y="${bottom+40}" class="axis-title" text-anchor="middle">${xLabel}</text>`;
   html += `<text x="20" y="${(top+bottom)/2}" class="axis-title" text-anchor="middle" transform="rotate(-90 20 ${(top+bottom)/2})">${yLabel}</text>`;
 
