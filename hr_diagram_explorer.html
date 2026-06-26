@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HR Diagram Explorer</title>
+<style>
+:root{
+  --purple:#4E2A84;
+  --purple-light:#8d6bc0;
+  --purple-pale:#d8c9ef;
+  --bg:#0a0b16;
+  --panel:#12132a;
+  --border:#2a2b48;
+  --text:#f0eef7;
+  --text-2:#b8b4cc;
+  --text-3:#7a7696;
+  --mono:'SF Mono','Roboto Mono','Courier New',monospace;
+  --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;
+  --cO:#7c5cff;
+  --cB:#4f7fe0;
+  --cA:#6fb0ff;
+  --cF:#bfe0ff;
+  --cG:#f4c430;
+  --cK:#ff8c42;
+  --cM:#e8543e;
+  --cWD:#eef2ff;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:var(--sans);}
+body{
+  background-image:
+    radial-gradient(1px 1px at 8% 12%, rgba(255,255,255,0.55), transparent 60%),
+    radial-gradient(1px 1px at 22% 38%, rgba(255,255,255,0.4), transparent 60%),
+    radial-gradient(1.5px 1.5px at 38% 8%, rgba(255,255,255,0.5), transparent 60%),
+    radial-gradient(1px 1px at 55% 28%, rgba(255,255,255,0.35), transparent 60%),
+    radial-gradient(1px 1px at 68% 55%, rgba(255,255,255,0.5), transparent 60%),
+    radial-gradient(1.5px 1.5px at 80% 18%, rgba(255,255,255,0.4), transparent 60%),
+    radial-gradient(1px 1px at 92% 48%, rgba(255,255,255,0.45), transparent 60%),
+    radial-gradient(1px 1px at 14% 70%, rgba(255,255,255,0.35), transparent 60%),
+    radial-gradient(1px 1px at 46% 82%, rgba(255,255,255,0.4), transparent 60%),
+    radial-gradient(1.5px 1.5px at 73% 88%, rgba(255,255,255,0.45), transparent 60%),
+    radial-gradient(1px 1px at 88% 75%, rgba(255,255,255,0.3), transparent 60%),
+    radial-gradient(1px 1px at 30% 95%, rgba(255,255,255,0.3), transparent 60%);
+  background-repeat:repeat;
+  background-size:340px 340px;
+}
+.banner{
+  background:linear-gradient(180deg, var(--purple) 0%, #3e2168 100%);
+  padding:1.1rem 1.5rem 1rem;
+  text-align:center;
+  border-bottom:1px solid #2a1850;
+}
+.banner h1{margin:0;font-size:1.3rem;font-weight:600;color:#fff;letter-spacing:0.01em;}
+.banner p{margin:0.3rem 0 0;color:var(--purple-pale);font-size:0.85rem;}
+main{max-width:920px;margin:0 auto;padding:1.1rem 1.25rem 1.5rem;}
+.intro{font-size:0.88rem;line-height:1.5;color:var(--text-2);margin:0 0 1rem;}
+.intro b{color:var(--text);font-weight:600;}
+.toggle-row{display:flex;gap:7px;justify-content:center;flex-wrap:wrap;margin-bottom:0.3rem;}
+.toggle-btn{
+  padding:8px 16px;border-radius:999px;border:1px solid var(--border);
+  background:transparent;color:var(--text-2);font-size:0.84rem;font-family:var(--sans);
+  cursor:pointer;transition:background 0.15s,color 0.15s,border-color 0.15s;
+}
+.toggle-btn:hover{border-color:var(--purple-light);color:var(--text);}
+.toggle-btn.active{background:var(--purple);border-color:var(--purple);color:#fff;}
+.toggle-btn.active:hover{border-color:var(--purple);}
+.dataset-label{text-align:center;font-size:0.78rem;color:var(--text-3);margin:0.4rem 0 0.7rem;font-family:var(--mono);}
+.chart-card{
+  background:var(--panel);border:1px solid var(--border);border-radius:14px;
+  padding:1.1rem 1rem 0.6rem;position:relative;
+}
+#wrap{position:relative;width:100%;}
+#tooltip{
+  position:absolute;display:none;pointer-events:none;
+  background:#1a1b36;border:1px solid var(--purple-light);border-radius:8px;
+  padding:9px 11px;font-size:12px;line-height:1.55;max-width:215px;z-index:10;color:var(--text);
+  box-shadow:0 4px 16px rgba(0,0,0,0.4);
+}
+#tooltip .ttname{font-weight:600;margin-bottom:3px;color:#fff;}
+#tooltip .ttrow{font-family:var(--mono);font-size:11.5px;color:var(--text-2);}
+#tooltip .ttnote{color:var(--text-3);margin-top:4px;font-family:var(--sans);font-style:italic;font-size:11px;}
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin:0.8rem 0 0.2rem;font-size:11.5px;color:var(--text-2);align-items:center;justify-content:center;}
+.legend .sw{display:flex;align-items:center;gap:5px;}
+.dot{width:10px;height:10px;border-radius:50%;display:inline-block;}
+.sq{width:11px;height:11px;border-radius:2px;display:inline-block;}
+.legend-div{width:1px;height:14px;background:var(--border);margin:0 2px;}
+.region-row{margin-top:0.4rem;}
+.region-btn{font-size:0.78rem;padding:7px 16px;}
+.caption{font-size:0.8rem;color:var(--text-3);margin:0.7rem auto 0;max-width:680px;text-align:center;line-height:1.5;}
+.caption i{font-style:italic;color:var(--text-2);}
+footer{text-align:center;font-size:0.72rem;color:var(--text-3);margin-top:1rem;font-family:var(--mono);}
+@media (max-width:480px){
+  .banner h1{font-size:1.2rem;}
+  .toggle-btn{padding:8px 13px;font-size:0.78rem;}
+  .chart-card{padding:0.8rem 0.6rem 0.4rem;}
+}
+</style>
+</head>
+<body>
+<header class="banner">
+<h1>HR diagram explorer</h1>
+<p>Three honest ways to populate the same diagram</p>
+</header>
+<main>
+<p class="intro">The same temperature&ndash;luminosity grid, populated three different ways. <b>Local neighborhood</b>: every known real star within about 17 light-years. <b>Brightest in the sky</b>: ranked by how bright stars look from Earth, regardless of distance. <b>Field guide</b>: a small set of examples covering each major stellar type, not a real sample.</p>
+<div class="toggle-row" id="toggleRow"></div>
+<div class="dataset-label" id="datasetLabel"></div>
+<div class="toggle-row region-row">
+<button class="toggle-btn region-btn" id="regionToggle">Show HR diagram regions</button>
+</div>
+<div class="chart-card">
+<div id="wrap">
+<div id="svgHost"></div>
+<div id="tooltip"></div>
+</div>
+<div class="legend">
+<span class="sw"><span class="dot" style="background:var(--cO)"></span>O</span>
+<span class="sw"><span class="dot" style="background:var(--cB)"></span>B</span>
+<span class="sw"><span class="dot" style="background:var(--cA)"></span>A</span>
+<span class="sw"><span class="dot" style="background:var(--cF)"></span>F</span>
+<span class="sw"><span class="dot" style="background:var(--cG)"></span>G</span>
+<span class="sw"><span class="dot" style="background:var(--cK)"></span>K</span>
+<span class="sw"><span class="dot" style="background:var(--cM)"></span>M</span>
+<span class="legend-div"></span>
+<span class="sw" style="color:var(--text-3);">marker size &#8733; radius</span>
+</div>
+<div class="legend" id="regionLegend" style="display:none;">
+<span class="sw" style="color:var(--text-3);">region boundaries are approximate &mdash; labels are drawn directly on the chart</span>
+</div>
+</div>
+<p class="caption" id="caption"></p>
+</main>
+<footer>data compiled from Gaia/Hipparcos-era catalogs &middot; radii derived live from <i>L</i> and <i>T</i> via Stefan&ndash;Boltzmann</footer>
+<script>
+(function(){
+
+var localStars=[
+{n:"Sun",t:5778,l:1.00,cls:"G",kind:"dwarf",d:0,lab:true},
+{n:"Proxima Centauri",t:3050,l:0.00152,cls:"M",kind:"dwarf",d:4.25,lab:true},
+{n:"Alpha Centauri A",t:5720,l:1.56,cls:"G",kind:"dwarf",d:4.37,lab:true},
+{n:"Alpha Centauri B",t:5080,l:0.553,cls:"K",kind:"dwarf",d:4.37,lab:true},
+{n:"Barnard's Star",t:3340,l:0.00324,cls:"M",kind:"dwarf",d:5.96,lab:false},
+{n:"Wolf 359",t:2500,l:0.000897,cls:"M",kind:"dwarf",d:7.86,lab:false},
+{n:"Lalande 21185",t:3480,l:0.0317,cls:"M",kind:"dwarf",d:8.31,lab:false},
+{n:"Sirius A",t:8860,l:24.3,cls:"A",kind:"dwarf",d:8.66,lab:true},
+{n:"Sirius B",t:25200,l:0.025,cls:"B",kind:"wd",d:8.71,lab:true,note:"first white dwarf ever found, 1862"},
+{n:"Luyten 726-8 A",t:2800,l:0.00159,cls:"M",kind:"dwarf",d:8.82,lab:false},
+{n:"Luyten 726-8 B",t:2500,l:0.00338,cls:"M",kind:"dwarf",d:8.82,lab:false},
+{n:"Ross 154",t:3470,l:0.00294,cls:"M",kind:"dwarf",d:9.71,lab:false},
+{n:"Ross 248",t:2800,l:0.00320,cls:"M",kind:"dwarf",d:10.31,lab:false},
+{n:"Epsilon Eridani",t:5116,l:0.498,cls:"K",kind:"dwarf",d:10.50,lab:false},
+{n:"Lacaille 9352",t:3530,l:0.0555,cls:"M",kind:"dwarf",d:10.72,lab:false},
+{n:"Ross 128",t:2990,l:0.00563,cls:"M",kind:"dwarf",d:11.01,lab:false},
+{n:"EZ Aquarii A",t:2900,l:0.00143,cls:"M",kind:"dwarf",d:11.11,lab:false},
+{n:"61 Cygni A",t:4570,l:0.141,cls:"K",kind:"dwarf",d:11.40,lab:false},
+{n:"61 Cygni B",t:3930,l:0.117,cls:"K",kind:"dwarf",d:11.40,lab:false},
+{n:"Procyon A",t:6800,l:6.94,cls:"F",kind:"dwarf",d:11.44,lab:true},
+{n:"Procyon B",t:7740,l:0.000488,cls:"A",kind:"wd",d:11.44,lab:true},
+{n:"Struve 2398 A",t:3480,l:0.0161,cls:"M",kind:"dwarf",d:11.49,lab:false},
+{n:"Struve 2398 B",t:3360,l:0.00963,cls:"M",kind:"dwarf",d:11.49,lab:false},
+{n:"Groombridge 34 A",t:3610,l:0.0221,cls:"M",kind:"dwarf",d:11.62,lab:false},
+{n:"Groombridge 34 B",t:3300,l:0.000853,cls:"M",kind:"dwarf",d:11.62,lab:false},
+{n:"DX Cancri",t:2460,l:0.000268,cls:"M",kind:"dwarf",d:11.68,lab:false},
+{n:"Epsilon Indi A",t:4571,l:0.244,cls:"K",kind:"dwarf",d:11.87,lab:false},
+{n:"Tau Ceti",t:5420,l:0.509,cls:"G",kind:"dwarf",d:11.91,lab:true},
+{n:"Luyten 372-58",t:2900,l:0.00143,cls:"M",kind:"dwarf",d:11.98,lab:false},
+{n:"YZ Ceti",t:2800,l:0.00497,cls:"M",kind:"dwarf",d:12.12,lab:false},
+{n:"Luyten's Star",t:3330,l:0.0101,cls:"M",kind:"dwarf",d:12.35,lab:false},
+{n:"Teegarden's Star",t:2700,l:0.000691,cls:"M",kind:"dwarf",d:12.50,lab:false},
+{n:"Kapteyn's Star",t:3400,l:0.0243,cls:"M",kind:"dwarf",d:12.83,lab:false},
+{n:"Lacaille 8760",t:3720,l:0.110,cls:"K",kind:"dwarf",d:12.95,lab:false},
+{n:"Kruger 60 A",t:3250,l:0.0145,cls:"M",kind:"dwarf",d:13.08,lab:false},
+{n:"Kruger 60 B",t:3200,l:0.00377,cls:"M",kind:"dwarf",d:13.08,lab:false},
+{n:"Ross 614 A",t:3100,l:0.00605,cls:"M",kind:"dwarf",d:13.42,lab:false},
+{n:"Wolf 1061",t:3270,l:0.0120,cls:"M",kind:"dwarf",d:14.05,lab:false},
+{n:"Van Maanen's Star",t:6300,l:0.000141,cls:"F",kind:"wd",d:14.07,lab:false,note:"a bare white dwarf, no companion"},
+{n:"Wolf 424 A",t:2900,l:0.00190,cls:"M",kind:"dwarf",d:14.11,lab:false},
+{n:"HD 225213",t:3570,l:0.0296,cls:"M",kind:"dwarf",d:14.18,lab:false},
+{n:"TZ Arietis",t:3200,l:0.00185,cls:"M",kind:"dwarf",d:14.58,lab:false},
+{n:"BD+68 946",t:3480,l:0.0212,cls:"M",kind:"dwarf",d:14.84,lab:false},
+{n:"CD-46 11540",t:3600,l:0.0146,cls:"M",kind:"dwarf",d:14.85,lab:false},
+{n:"LHS 292",t:2600,l:0.000890,cls:"M",kind:"dwarf",d:14.87,lab:false},
+{n:"Luyten 145-141",t:7880,l:0.000347,cls:"A",kind:"wd",d:15.12,lab:false},
+{n:"V1581 Cygni A",t:2720,l:0.00283,cls:"M",kind:"dwarf",d:15.20,lab:false},
+{n:"V1581 Cygni B",t:2500,l:0.000110,cls:"M",kind:"dwarf",d:15.20,lab:false},
+{n:"V1581 Cygni C",t:2500,l:0.00406,cls:"M",kind:"dwarf",d:15.20,lab:false},
+{n:"Ross 780",t:3350,l:0.0146,cls:"M",kind:"dwarf",d:15.24,lab:false},
+{n:"Luyten 143-23",t:2860,l:0.00135,cls:"M",kind:"dwarf",d:15.76,lab:false},
+{n:"LHS 2",t:2900,l:0.00124,cls:"M",kind:"dwarf",d:15.81,lab:false},
+{n:"Groombridge 1618",t:3890,l:0.145,cls:"K",kind:"dwarf",d:15.89,lab:false},
+{n:"Lalande 21258 A",t:3510,l:0.0328,cls:"M",kind:"dwarf",d:16.00,lab:false},
+{n:"Lalande 21258 B",t:2800,l:0.000937,cls:"M",kind:"dwarf",d:16.00,lab:false},
+{n:"AD Leonis",t:3450,l:0.0224,cls:"M",kind:"dwarf",d:16.19,lab:false},
+{n:"HD 204961",t:3440,l:0.0438,cls:"M",kind:"dwarf",d:16.20,lab:false},
+{n:"CD-44 11909",t:3170,l:0.00930,cls:"M",kind:"dwarf",d:16.33,lab:false},
+{n:"40 Eridani A",t:5070,l:0.415,cls:"K",kind:"dwarf",d:16.34,lab:false},
+{n:"40 Eridani B",t:16200,l:0.00998,cls:"B",kind:"wd",d:16.33,lab:false,note:"the second white dwarf ever found"},
+{n:"40 Eridani C",t:3200,l:0.00687,cls:"M",kind:"dwarf",d:16.35,lab:false},
+{n:"EV Lacertae",t:3400,l:0.0116,cls:"M",kind:"dwarf",d:16.48,lab:false},
+{n:"70 Ophiuchi A",t:5023,l:0.595,cls:"K",kind:"dwarf",d:16.71,lab:false},
+{n:"70 Ophiuchi B",t:4500,l:0.151,cls:"K",kind:"dwarf",d:16.71,lab:false},
+{n:"Altair",t:7760,l:10.7,cls:"A",kind:"dwarf",d:16.73,lab:true}
+];
+
+var brightStars=[
+{n:"Sun",t:5778,l:1.00,cls:"G",kind:"dwarf",d:0,lab:true,note:"the most extreme case of \u2018bright because close\u2019 \u2014 by far the brightest thing in our sky"},
+{n:"Sirius A",t:8860,l:24.3,cls:"A",kind:"dwarf",d:8.66,lab:true,note:"bright mainly because it's close"},
+{n:"Canopus",t:7400,l:10700,cls:"F",kind:"supergiant",d:310,lab:true,note:"bright because it's intrinsically immense"},
+{n:"Alpha Centauri A",t:5720,l:1.56,cls:"G",kind:"dwarf",d:4.37,lab:true,note:"bright mainly because it's close"},
+{n:"Arcturus",t:4286,l:180,cls:"K",kind:"giant",d:36.7,lab:true,note:"an evolved giant, swelling and cooling"},
+{n:"Vega",t:9600,l:40.1,cls:"A",kind:"dwarf",d:25.0,lab:true,note:"close and genuinely hot"},
+{n:"Capella",t:4970,l:78.5,cls:"G",kind:"giant",d:42.9,lab:true,note:"a close binary pair of giants"},
+{n:"Rigel",t:12100,l:120000,cls:"B",kind:"supergiant",d:860,lab:true,note:"bright because it's intrinsically immense"},
+{n:"Procyon A",t:6800,l:6.94,cls:"F",kind:"dwarf",d:11.44,lab:true,note:"bright mainly because it's close"},
+{n:"Betelgeuse",t:3550,l:126000,cls:"M",kind:"supergiant",d:548,lab:true,note:"bright because it's intrinsically immense"},
+{n:"Achernar",t:14000,l:3000,cls:"B",kind:"dwarf",d:139,lab:true,note:"hot main-sequence star, not too far"},
+{n:"Altair",t:7760,l:10.7,cls:"A",kind:"dwarf",d:16.73,lab:true,note:"bright mainly because it's close"},
+{n:"Aldebaran",t:3910,l:520,cls:"K",kind:"giant",d:65,lab:true,note:"an evolved giant, swelling and cooling"},
+{n:"Antares",t:3570,l:76000,cls:"M",kind:"supergiant",d:550,lab:true,note:"bright because it's intrinsically immense"},
+{n:"Spica",t:22400,l:20500,cls:"B",kind:"giant",d:250,lab:true,note:"hot and intrinsically very luminous"},
+{n:"Pollux",t:4666,l:33,cls:"K",kind:"giant",d:33.8,lab:true,note:"an evolved giant, swelling and cooling"},
+{n:"Fomalhaut A",t:8590,l:16.6,cls:"A",kind:"dwarf",d:25.1,lab:true,note:"close and genuinely hot"},
+{n:"Deneb",t:8525,l:196000,cls:"A",kind:"supergiant",d:2600,lab:true,note:"~2,600 ly away \u2014 visible only because it's extreme"}
+];
+
+var fieldGuideStars=[
+{n:"Lalande 21185",t:3480,l:0.0317,cls:"M",kind:"dwarf",d:8.31,lab:true,note:"early M dwarf"},
+{n:"Proxima Centauri",t:3050,l:0.00152,cls:"M",kind:"dwarf",d:4.25,lab:true,note:"mid M dwarf \u2014 the most common star in the galaxy"},
+{n:"Teegarden's Star",t:2700,l:0.000691,cls:"M",kind:"dwarf",d:12.50,lab:true,note:"late M dwarf, among the coolest known"},
+{n:"Alpha Centauri B",t:5080,l:0.553,cls:"K",kind:"dwarf",d:4.37,lab:true,note:"early K dwarf"},
+{n:"Lacaille 8760",t:3720,l:0.110,cls:"K",kind:"dwarf",d:12.95,lab:true,note:"late K dwarf"},
+{n:"Sun",t:5778,l:1.00,cls:"G",kind:"dwarf",d:0,lab:true,note:"early G dwarf \u2014 our reference point"},
+{n:"Tau Ceti",t:5420,l:0.509,cls:"G",kind:"dwarf",d:11.91,lab:true,note:"late G dwarf"},
+{n:"Porrima A",t:7100,l:4.5,cls:"F",kind:"dwarf",d:38.1,lab:true,note:"early F dwarf"},
+{n:"Procyon A",t:6800,l:6.94,cls:"F",kind:"dwarf",d:11.44,lab:true,note:"late F dwarf"},
+{n:"Sirius A",t:8860,l:24.3,cls:"A",kind:"dwarf",d:8.66,lab:true,note:"early A dwarf"},
+{n:"Altair",t:7760,l:10.7,cls:"A",kind:"dwarf",d:16.73,lab:true,note:"late A dwarf"},
+{n:"Alkaid",t:16800,l:600,cls:"B",kind:"dwarf",d:103.9,lab:true,note:"early B dwarf"},
+{n:"Achernar",t:14000,l:3000,cls:"B",kind:"dwarf",d:139,lab:true,note:"late B dwarf"},
+{n:"Zeta Ophiuchi",t:34300,l:70000,cls:"O",kind:"dwarf",d:366,lab:true,note:"O dwarf \u2014 the nearest one to us, and still 366 ly away"},
+{n:"Arcturus",t:4286,l:180,cls:"K",kind:"giant",d:36.7,lab:true,note:"evolved giant, off the main sequence"},
+{n:"Betelgeuse",t:3550,l:126000,cls:"M",kind:"supergiant",d:548,lab:true,note:"red supergiant, near the end of its life"},
+{n:"Rigel",t:12100,l:120000,cls:"B",kind:"supergiant",d:860,lab:true,note:"blue supergiant"},
+{n:"Sirius B",t:25200,l:0.025,cls:"B",kind:"wd",d:8.71,lab:true,note:"hot DA white dwarf \u2014 first one ever found, 1862"},
+{n:"40 Eridani B",t:16200,l:0.00998,cls:"B",kind:"wd",d:16.33,lab:true,note:"mid-temperature DA white dwarf \u2014 the second one ever found"},
+{n:"Van Maanen's Star",t:6300,l:0.000141,cls:"F",kind:"wd",d:14.07,lab:true,note:"cool DZ white dwarf \u2014 metal-polluted atmosphere, no companion"}
+];
+
+var captions={
+local:"65 real stars \u2014 the complete known population within about 17 light-years. Nothing here was chosen; this is simply what is nearby. Notice how little of the diagram it occupies.",
+bright:"18 stars, ranked by how bright they look from Earth \u2014 starting with the Sun itself, the most extreme case of bright-because-close. Seven are genuinely close ordinary stars; the rest are visible only because they are extraordinarily luminous giants and supergiants, often hundreds of light-years away.",
+field:"20 stars: early and late examples of each main-sequence class (three for M, since it's by far the most common type), plus a hot/mid/cool trio of white dwarfs, and one example each of the giant and supergiant categories. Still not a sample of anything real \u2014 just enough points to trace the shape of the diagram."
+};
+
+var labels={local:"Local neighborhood",bright:"Brightest in the sky",field:"Field guide: stellar types"};
+
+var W=820,H=680,mL=80,mR=24,mT=44,mB=64;
+var pW=W-mL-mR,pH=H-mT-mB;
+var tMax=40000,tMin=2300,Lmax=300000,Lmin=0.00003;
+
+function xPix(t){return mL+(Math.log10(tMax)-Math.log10(t))/(Math.log10(tMax)-Math.log10(tMin))*pW;}
+function yPix(l){return mT+(Math.log10(Lmax)-Math.log10(l))/(Math.log10(Lmax)-Math.log10(Lmin))*pH;}
+function radiusOf(s){return Math.sqrt(s.l)/Math.pow(s.t/5778,2);}
+function markerPx(r){return Math.max(3.2,Math.min(22,4+8.5*Math.pow(r,0.28)));}
+var colors={O:"var(--cO)",B:"var(--cB)",A:"var(--cA)",F:"var(--cF)",G:"var(--cG)",K:"var(--cK)",M:"var(--cM)"};
+var colorsHex={O:"#7c5cff",B:"#4f7fe0",A:"#6fb0ff",F:"#bfe0ff",G:"#f4c430",K:"#ff8c42",M:"#e8543e"};
+
+function sup(n){
+  var map={"-":"\u207B","0":"\u2070","1":"\u00B9","2":"\u00B2","3":"\u00B3","4":"\u2074","5":"\u2075","6":"\u2076"};
+  return String(n).split("").map(function(c){return map[c]||c;}).join("");
+}
+function fmtPow10(v){
+  var exp=Math.round(Math.log10(v));
+  if(v===1){return "1";}
+  return "10"+sup(exp);
+}
+function fmtT(t){return t.toLocaleString()+" K";}
+function fmtL(l){
+  if(l>=0.01){return (Math.round(l*1000)/1000)+" L\u2609";}
+  var exp=Math.floor(Math.log10(l));
+  var mant=(l/Math.pow(10,exp)).toFixed(2);
+  return mant+" \u00D7 10"+sup(exp)+" L\u2609";
+}
+function fmtR(r){
+  if(r>=10){return Math.round(r)+" R\u2609";}
+  if(r>=0.1){return (Math.round(r*100)/100)+" R\u2609";}
+  return (Math.round(r*1000)/1000)+" R\u2609";
+}
+function clampL(l){return Math.min(Math.max(l,Lmin*1.0001),Lmax*0.9999);}
+
+var msAnchors=[[40000,250000],[30000,20000],[20000,4000],[15000,800],[10000,65],[8500,18],[7200,6.0],[6500,3.0],[5800,1.1],[5200,0.42],[4500,0.15],[3900,0.06],[3300,0.012],[2800,0.0025],[2300,0.0006]];
+
+function pathFromPoints(pts){
+  return "M "+pts.map(function(p){return p[0].toFixed(1)+","+p[1].toFixed(1);}).join(" L ");
+}
+
+function buildMainSequenceBand(){
+  var upper=msAnchors.map(function(a){return [xPix(a[0]),yPix(clampL(a[1]*2.5))];});
+  var lower=msAnchors.map(function(a){return [xPix(a[0]),yPix(clampL(a[1]/2.5))];}).reverse();
+  return pathFromPoints(upper.concat(lower))+" Z";
+}
+
+function buildWhiteDwarfBand(){
+  var n=24,pts=[];
+  var rLo=0.008,rHi=0.02;
+  var upper=[],lower=[];
+  for(var i=0;i<=n;i++){
+    var frac=i/n;
+    var logT=Math.log10(tMin)+frac*(Math.log10(tMax)-Math.log10(tMin));
+    var t=Math.pow(10,logT);
+    var lUp=rHi*rHi*Math.pow(t/5778,4);
+    var lLo=rLo*rLo*Math.pow(t/5778,4);
+    upper.push([xPix(t),yPix(clampL(lUp))]);
+    lower.push([xPix(t),yPix(clampL(lLo))]);
+  }
+  lower.reverse();
+  return pathFromPoints(upper.concat(lower))+" Z";
+}
+
+function buildGiantRegion(){
+  return '<ellipse cx="638" cy="235" rx="55" ry="70" fill="rgba(255,140,66,0.15)" stroke="rgba(255,140,66,0.45)" stroke-width="1"/>';
+}
+function buildSupergiantRegion(){
+  return '<ellipse cx="456" cy="88" rx="295" ry="65" fill="rgba(232,84,62,0.13)" stroke="rgba(232,84,62,0.4)" stroke-width="1"/>';
+}
+function regionLabel(x,y,text,color){
+  return '<text x="'+x+'" y="'+y+'" text-anchor="middle" font-size="12.5" font-weight="600" letter-spacing="2" fill="'+color+'" opacity="0.85">'+text+'</text>';
+}
+
+function buildRegionsSvg(){
+  var wd='<path d="'+buildWhiteDwarfBand()+'" fill="rgba(111,176,255,0.16)" stroke="rgba(111,176,255,0.45)" stroke-width="1"/>';
+  var ms='<path d="'+buildMainSequenceBand()+'" fill="rgba(216,201,239,0.14)" stroke="rgba(216,201,239,0.4)" stroke-width="1"/>';
+  var gi=buildGiantRegion();
+  var sg=buildSupergiantRegion();
+  var labels=
+    regionLabel(362,230,"MAIN SEQUENCE","#c9b8e8")+
+    regionLabel(393,505,"WHITE DWARFS","#8fc0ff")+
+    regionLabel(655,300,"GIANTS","#ffab66")+
+    regionLabel(532,90,"SUPERGIANTS","#ff7a63");
+  return wd+ms+gi+sg+labels;
+}
+
+function buildAxesSvg(){
+  var tTicks=[30000,10000,6000,4500,3000];
+  var lTicks=[100000,10000,1000,100,10,1,0.1,0.01,0.001,0.0001];
+  var grid="";
+  for(var i=0;i<tTicks.length;i++){
+    var x=xPix(tTicks[i]);
+    grid+='<line x1="'+x+'" y1="'+mT+'" x2="'+x+'" y2="'+(mT+pH)+'" stroke="#23244a" stroke-width="1"/>';
+    grid+='<text x="'+x+'" y="'+(mT+pH+24)+'" text-anchor="middle" font-size="13.5" fill="#9b97b8">'+tTicks[i].toLocaleString()+'</text>';
+  }
+  for(var j=0;j<lTicks.length;j++){
+    var y=yPix(lTicks[j]);
+    grid+='<line x1="'+mL+'" y1="'+y+'" x2="'+(mL+pW)+'" y2="'+y+'" stroke="#23244a" stroke-width="1"/>';
+    grid+='<text x="'+(mL-10)+'" y="'+(y+5)+'" text-anchor="end" font-size="13.5" fill="#9b97b8">'+fmtPow10(lTicks[j])+'</text>';
+  }
+  var classLabels=[{c:"O",t:33000},{c:"B",t:16000},{c:"A",t:9000},{c:"F",t:6900},{c:"G",t:5600},{c:"K",t:4500},{c:"M",t:3200}];
+  var headers="";
+  for(var k=0;k<classLabels.length;k++){
+    var cl=classLabels[k];
+    headers+='<text x="'+xPix(cl.t)+'" y="'+(mT-13)+'" text-anchor="middle" font-size="13" font-weight="600" fill="'+colorsHex[cl.c]+'">'+cl.c+'</text>';
+  }
+  return '<rect x="'+mL+'" y="'+mT+'" width="'+pW+'" height="'+pH+'" fill="none" stroke="#33345c" stroke-width="1"/>'+grid+headers+
+    '<text x="'+(mL+pW/2)+'" y="'+(H-14)+'" text-anchor="middle" font-size="13.5" fill="#b8b4cc">surface temperature, <tspan font-style="italic">T</tspan> (K) \u2014 hotter (left) to cooler (right)</text>'+
+    '<text x="18" y="'+(mT+pH/2)+'" text-anchor="middle" font-size="13.5" fill="#b8b4cc" transform="rotate(-90 18 '+(mT+pH/2)+')">luminosity, <tspan font-style="italic">L</tspan> (L\u2609, log scale)</text>';
+}
+
+var svgHost=document.getElementById("svgHost");
+var axesHtml=buildAxesSvg();
+svgHost.innerHTML='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;aspect-ratio:'+W+'/'+H+';display:block;" xmlns="http://www.w3.org/2000/svg"><defs><clipPath id="plotClip"><rect x="'+mL+'" y="'+mT+'" width="'+pW+'" height="'+pH+'"/></clipPath></defs><g id="regionsLayer" clip-path="url(#plotClip)"></g><g id="axesLayer">'+axesHtml+'</g><g id="markersLayer"></g></svg>';
+
+var tip=document.getElementById("tooltip");
+var wrapEl=document.getElementById("wrap");
+
+var labelOverrides={
+  "Sun":{dx:0,dyAdd:20,dir:-1,anchor:"middle"},
+  "Tau Ceti":{dx:0,dyAdd:15,dir:1,anchor:"middle"},
+  "Vega":{dx:12,dyAdd:10,dir:-1,anchor:"start"},
+  "Sirius A":{dx:-12,dyAdd:14,dir:1,anchor:"end"},
+  "Fomalhaut A":{dx:12,dyAdd:10,dir:-1,anchor:"start"},
+  "Altair":{dx:-12,dyAdd:14,dir:1,anchor:"end"},
+  "Porrima A":{dx:-12,dyAdd:14,dir:1,anchor:"end"},
+  "Procyon A":{dx:12,dyAdd:10,dir:-1,anchor:"start"},
+  "Proxima Centauri":{left:true,anchor:"end"},
+  "Arcturus":{dx:27,dyAdd:-14,dir:1,anchor:"start"},
+  "Capella":{dx:-15,dyAdd:10,dir:-1,anchor:"middle"},
+  "Antares":{dx:0,dyAdd:12,dir:1,anchor:"middle"}
+};
+function resolveLabel(st,x,y,px){
+  var ov=labelOverrides[st.n];
+  if(!ov){return {x:x+px+5,y:y+3,anchor:"start"};}
+  if(ov.left){return {x:x-px-5,y:y+3,anchor:ov.anchor};}
+  return {x:x+ov.dx,y:y+ov.dir*(px+ov.dyAdd),anchor:ov.anchor};
+}
+
+function renderMarkers(stars){
+  var markersHtml="";
+  for(var s=0;s<stars.length;s++){
+    var st=stars[s];
+    var x=xPix(st.t),y=yPix(st.l);
+    var r=radiusOf(st);
+    var px=markerPx(r);
+    var fill=colorsHex[st.cls];
+    var shape='<circle cx="'+x+'" cy="'+y+'" r="'+px+'" fill="'+fill+'" stroke="#1a1b36" stroke-width="1"/>';
+    if(st.n==="Sun"){
+      markersHtml+='<circle cx="'+x+'" cy="'+y+'" r="'+(px+5)+'" fill="none" stroke="#f4c430" stroke-width="1.6"/>';
+    }
+    markersHtml+='<g class="star-marker" data-idx="'+s+'" style="cursor:pointer;">'+shape+'</g>';
+    if(st.lab){
+      var lp=resolveLabel(st,x,y,px);
+      markersHtml+='<text x="'+lp.x+'" y="'+lp.y+'" text-anchor="'+lp.anchor+'" font-size="11" fill="#cfccdf">'+st.n+'</text>';
+    }
+  }
+  document.getElementById("markersLayer").innerHTML=markersHtml;
+  var nodes=wrapEl.querySelectorAll(".star-marker");
+  nodes.forEach(function(node){
+    var idx=parseInt(node.getAttribute("data-idx"));
+    var st=stars[idx];
+    var r=radiusOf(st);
+    node.addEventListener("pointerenter",function(){
+      var distTxt=st.d===0?"reference point":st.d.toFixed(2)+" ly away";
+      tip.innerHTML='<div class="ttname">'+st.n+'</div>'+
+        '<div class="ttrow">'+distTxt+'</div>'+
+        '<div class="ttrow"><i>T</i> = '+fmtT(st.t)+'</div>'+
+        '<div class="ttrow"><i>L</i> = '+fmtL(st.l)+'</div>'+
+        '<div class="ttrow"><i>R</i> \u2248 '+fmtR(r)+'</div>'+
+        (st.note?'<div class="ttnote">'+st.note+'</div>':'');
+      tip.style.display="block";
+    });
+    node.addEventListener("pointermove",function(e){
+      var rect=wrapEl.getBoundingClientRect();
+      var lx=e.clientX-rect.left,ly2=e.clientY-rect.top;
+      var tw=215;
+      var left=lx+14;
+      if(left+tw>rect.width){left=lx-tw-14;}
+      tip.style.left=left+"px";
+      tip.style.top=(ly2-10)+"px";
+    });
+    node.addEventListener("pointerleave",function(){tip.style.display="none";});
+  });
+}
+
+var datasets={local:localStars,bright:brightStars,field:fieldGuideStars};
+var order=["local","bright","field"];
+var toggleRow=document.getElementById("toggleRow");
+var datasetLabelEl=document.getElementById("datasetLabel");
+var captionEl=document.getElementById("caption");
+
+function activate(key){
+  order.forEach(function(k){
+    document.getElementById("btn-"+k).className="toggle-btn"+(k===key?" active":"");
+  });
+  renderMarkers(datasets[key]);
+  datasetLabelEl.textContent=datasets[key].length+" stars \u2014 "+labels[key];
+  captionEl.textContent=captions[key];
+}
+
+order.forEach(function(key){
+  var btn=document.createElement("button");
+  btn.className="toggle-btn";
+  btn.id="btn-"+key;
+  btn.textContent=labels[key];
+  btn.onclick=function(){activate(key);};
+  toggleRow.appendChild(btn);
+});
+
+activate("local");
+
+var regionsOn=false;
+var regionToggle=document.getElementById("regionToggle");
+var regionLegend=document.getElementById("regionLegend");
+regionToggle.onclick=function(){
+  regionsOn=!regionsOn;
+  document.getElementById("regionsLayer").innerHTML=regionsOn?buildRegionsSvg():"";
+  regionToggle.className="toggle-btn region-btn"+(regionsOn?" active":"");
+  regionToggle.textContent=regionsOn?"Hide HR diagram regions":"Show HR diagram regions";
+  regionLegend.style.display=regionsOn?"flex":"none";
+};
+
+})();
+</script>
+</body>
+</html>

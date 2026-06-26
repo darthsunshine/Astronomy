@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kepler's Second Law Explorer</title>
+<style>
+  :root{
+    --bg:#070b16;
+    --panel:#0f1830;
+    --panel-border:#1f2d4d;
+    --text:#dfe7f5;
+    --text-dim:#8492b3;
+    --accent:#5ee7ff;
+    --accent-dim:#5ee7ff66;
+    --warn:#ffb454;
+    --green:#8ee686;
+    --nu-purple:#4E2A84;
+    --nu-purple-light:#836EAA;
+    --nu-purple-dark:#401F68;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background-color:var(--bg);
+    background-image:
+      radial-gradient(1px 1px at 15% 22%, #ffffff55 1px, transparent 0),
+      radial-gradient(1px 1px at 78% 12%, #ffffff44 1px, transparent 0),
+      radial-gradient(1px 1px at 35% 65%, #ffffff33 1px, transparent 0),
+      radial-gradient(1px 1px at 60% 80%, #ffffff55 1px, transparent 0),
+      radial-gradient(1px 1px at 90% 45%, #ffffff33 1px, transparent 0),
+      radial-gradient(1px 1px at 8% 88%, #ffffff44 1px, transparent 0);
+    background-size:340px 340px;
+    color:var(--text);
+    font-family:var(--sans);
+    -webkit-font-smoothing:antialiased;
+  }
+  .nu-banner{
+    background:var(--nu-purple);
+    color:#fff;
+    padding:13px 24px;
+    display:flex;
+    align-items:baseline;
+    gap:10px;
+    flex-wrap:wrap;
+  }
+  .nu-wordmark{font-weight:700;font-size:14px;letter-spacing:0.06em;text-transform:uppercase;}
+  .nu-dept{font-size:12px;color:#d9cdec;}
+  .wrap{max-width:1180px;margin:0 auto;padding:28px 20px 60px;}
+
+  header{margin-bottom:18px;}
+  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--accent);margin:0 0 8px;}
+  h1{font-size:clamp(24px,4vw,34px);margin:0 0 8px;font-weight:650;letter-spacing:-0.01em;}
+  .sub{color:var(--text-dim);max-width:660px;line-height:1.5;font-size:14.5px;margin:0;}
+
+  .selector{
+    background:var(--panel);
+    border:1px solid var(--panel-border);
+    border-radius:14px;
+    padding:14px 16px;
+    margin:18px 0;
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    gap:14px;
+  }
+  .pills{display:flex;flex-wrap:wrap;gap:6px;}
+  .pill{
+    display:flex;align-items:center;gap:6px;
+    font-family:var(--mono);font-size:12.5px;
+    padding:7px 12px;
+    border-radius:999px;
+    border:1px solid var(--panel-border);
+    background:#0b1226;
+    color:var(--text-dim);
+    cursor:pointer;
+    user-select:none;
+    transition:all .15s;
+  }
+  .pill.active{color:var(--text);border-color:var(--accent);background:#5ee7ff1a;}
+  .pill:hover{color:var(--text);}
+  .pill:focus-visible{outline:2px solid var(--accent);outline-offset:1px;}
+
+  .ecc-control{display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:12px;color:var(--text-dim);}
+  .ecc-control input[type=range]{accent-color:var(--accent);width:140px;}
+  .ecc-control .eccval{color:var(--text);font-weight:600;min-width:36px;}
+
+  .main{display:grid;grid-template-columns:1.15fr 1fr;gap:18px;align-items:start;}
+  @media (max-width:760px){ .main{grid-template-columns:1fr;} }
+  .card{
+    min-width:0;
+    background:var(--panel);
+    border:1px solid var(--panel-border);
+    border-radius:14px;
+    padding:16px 18px 14px;
+  }
+  .card-head{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px;}
+  .card-title{font-size:14px;font-weight:650;margin:0;}
+  .card-note{font-family:var(--mono);font-size:10.5px;color:var(--text-dim);margin:0;}
+  .toolbar{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-bottom:10px;}
+  .checkrow{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:11.5px;color:var(--text-dim);cursor:pointer;}
+  .checkrow input{accent-color:var(--warn);}
+
+  svg{width:100%;height:auto;display:block;aspect-ratio:1/1;}
+  #orbitSvg{aspect-ratio:600/380;}
+  .sun{fill:#ffd98a;filter:drop-shadow(0 0 8px #ffd98aaa);}
+  .orbit-path{fill:none;stroke:#33466e;stroke-width:1.3;opacity:0.7;}
+  .body-marker{fill:#5ee7ff;stroke:#070b16;stroke-width:1.5;}
+  .vec-line{stroke-width:2.2;fill:none;}
+  .axis-line{stroke:#33466e;stroke-width:1.2;}
+  .grid-line{stroke:#1a2745;stroke-width:1;}
+  .tick-label{fill:var(--text-dim);font-family:var(--mono);font-size:10.5px;}
+  .focus-label{fill:var(--text-dim);font-family:var(--mono);font-size:10.5px;}
+  .axis-title{fill:var(--text-dim);font-family:var(--mono);font-size:11px;letter-spacing:0.04em;}
+  .bar-label{fill:var(--text);font-family:var(--mono);font-size:11px;text-anchor:middle;}
+  .bar-sub{fill:var(--text-dim);font-family:var(--mono);font-size:9.5px;text-anchor:middle;}
+
+  .readout{
+    margin-top:8px;
+    background:#0b1226;
+    border:1px solid var(--panel-border);
+    border-radius:8px;
+    padding:9px 12px;
+    font-family:var(--mono);
+    font-size:12px;
+    color:var(--text-dim);
+    min-height:18px;
+  }
+  .readout b{color:var(--text);font-weight:650;}
+  .readout .val{color:var(--accent);}
+
+  .btn{
+    font-family:var(--sans);font-size:12.5px;font-weight:600;color:var(--text-dim);
+    background:#101b35;border:1px solid var(--panel-border);border-radius:8px;
+    padding:7px 12px;cursor:pointer;transition:color .15s, border-color .15s, background .15s;
+  }
+  .btn:hover{color:var(--text);border-color:#33466e;}
+  .btn.active{color:#04222b;background:var(--accent);border-color:var(--accent);}
+  .btn:disabled{opacity:0.4;cursor:default;}
+  .btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+  .btn-group{display:flex;gap:4px;}
+
+  .anim-controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px;}
+  .anim-controls input[type=range]{flex:1;min-width:90px;accent-color:var(--accent);}
+  .clock{font-family:var(--mono);font-size:11.5px;color:var(--text-dim);white-space:nowrap;}
+  .clock b{color:var(--text);}
+
+  footer{margin-top:22px;color:var(--text-dim);font-size:11.5px;line-height:1.6;}
+</style>
+</head>
+<body>
+<div class="nu-banner">
+  <span class="nu-wordmark">Northwestern University</span>
+  <span class="nu-dept">Department of Physics &amp; Astronomy</span>
+</div>
+<div class="wrap">
+
+  <header>
+    <p class="eyebrow">Orbital Mechanics Lab</p>
+    <h1>Kepler's Second Law Explorer</h1>
+    <p class="sub">A line from the Sun to an orbiting body sweeps out equal areas in equal times. Pick a real (or adjustable) orbit, sweep near and far from the Sun, and compare.</p>
+  </header>
+
+  <div class="selector">
+    <div class="pills" id="caseRow"></div>
+    <div class="ecc-control" id="eccControl">
+      <label for="eccSlider">eccentricity <i>e</i></label>
+      <input type="range" id="eccSlider" min="0" max="0.9" step="0.01" value="0.6">
+      <span class="eccval" id="eccVal">0.60</span>
+    </div>
+  </div>
+
+  <div class="main">
+
+    <div class="card">
+      <div class="card-head">
+        <p class="card-title">Live orbit</p>
+        <p class="card-note" id="caseNote">&nbsp;</p>
+      </div>
+      <div class="toolbar">
+        <label class="checkrow"><input type="checkbox" id="velToggle" checked> velocity vector</label>
+        <label class="checkrow"><input type="checkbox" id="gravToggle" checked> gravity vector</label>
+      </div>
+      <svg id="orbitSvg" viewBox="0 0 600 380"></svg>
+      <div class="readout" id="liveReadout"></div>
+
+      <div class="anim-controls" style="margin-top:14px;">
+        <button class="btn" id="jumpPeriBtn">Jump to perihelion</button>
+        <button class="btn" id="jumpApoBtn">Jump to aphelion</button>
+      </div>
+      <div class="anim-controls">
+        <span class="clock">sweep length</span>
+        <div class="btn-group">
+          <button class="btn" data-sweep="48">short (<i>T</i>/48)</button>
+          <button class="btn active" data-sweep="24">medium (<i>T</i>/24)</button>
+          <button class="btn" data-sweep="12">long (<i>T</i>/12)</button>
+        </div>
+        <button class="btn" id="startSweepBtn" style="margin-left:auto;">Start sweep</button>
+        <button class="btn" id="autoSweepBtn">Auto sweep (apo + peri)</button>
+        <button class="btn" id="clearSweepBtn">Clear</button>
+      </div>
+      <div class="anim-controls">
+        <button class="btn" id="playBtn">Pause</button>
+        <button class="btn" id="resetBtn">Reset</button>
+        <input type="range" id="speedSlider" min="0.05" max="1" step="0.05" value="0.2">
+        <span class="clock" id="speedLabel">0.2 yr/sec</span>
+      </div>
+      <div class="clock" style="margin-top:6px;">Elapsed: <b id="clockLabel">0.0 yr</b></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <p class="card-title">Equal areas, equal times</p>
+        <p class="card-note">area swept per sweep, AU&sup2;</p>
+      </div>
+      <svg id="barSvg" viewBox="0 0 600 600"></svg>
+      <div class="readout" id="barReadout">Run a sweep to compare areas.</div>
+      <div class="readout" id="dadtReadout"></div>
+    </div>
+
+  </div>
+
+  <footer>
+    Position and velocity are computed by solving Kepler's equation directly (Newton's method) at every step — not approximated. The gravity vector shown is acceleration, <i>GM</i>/<i>r</i>&sup2; (force per unit mass), since no planet mass is assumed. Vector lengths are compressed (&radic;) so both near- and far-orbit values stay visible on screen; their relative lengths still grow and shrink correctly with <i>r</i>. Swept areas are computed by direct numerical integration of the actual path (summing triangles from the Sun), not assumed equal from the law.
+  </footer>
+</div>
+
+<script>
+const GM = 4*Math.PI*Math.PI; // AU^3 / yr^2 (Sun-centered, AU-year units)
+
+const CASES = {
+  hypothetical: { name:'Hypothetical planet', a:1.0,   T:1.0,   e:0.6,    adjustableE:true,  rate:0.2, speedMax:1  },
+  mars:         { name:'Mars',                a:1.524, T:1.881, e:0.0934, adjustableE:false, rate:0.3, speedMax:1  },
+  halley:       { name:"Halley's Comet",      a:17.83, T:75.3,  e:0.967,  adjustableE:false, rate:12,  speedMax:20 },
+  earth:        { name:'Earth',               a:1.0,   T:1.0,   e:0.0167, adjustableE:false, rate:0.2, speedMax:1  },
+};
+const CASE_ORDER = ['hypothetical','mars','halley','earth'];
+const SWEEP_COLORS = ['#5ee7ff','#ffb454','#8ee686'];
+
+let state = {
+  caseId:'hypothetical',
+  rate: CASES.hypothetical.rate,
+  playing: true,
+  elapsed: 0,
+  showVel: true,
+  showGrav: true,
+  sweepDivisor: 24,
+  activeSweep: null,   // {startT,endT,points[],color}
+  sweepRecords: [],    // {area, color, meanR, id}
+  sweepIdCounter: 0,
+  autoQueue: [],       // pending centerT values for auto-sweep sequence
+};
+
+function currentCase(){
+  const c = CASES[state.caseId];
+  return state.caseId === 'hypothetical' ? {...c, e: state.heccOverride ?? c.e} : c;
+}
+
+// ---------- orbital mechanics ----------
+function solveKepler(M, e){
+  let E = M + e*Math.sin(M);
+  for(let i=0;i<60;i++){
+    const f = E - e*Math.sin(E) - M;
+    const fp = 1 - e*Math.cos(E);
+    const dE = f/fp;
+    E -= dE;
+    if(Math.abs(dE) < 1e-12) break;
+  }
+  return E;
+}
+function trueAnomaly(E,e){
+  return 2*Math.atan2(Math.sqrt(1+e)*Math.sin(E/2), Math.sqrt(1-e)*Math.cos(E/2));
+}
+function orbitState(t, a, T, e){
+  const n = 2*Math.PI/T;
+  let M = n*t;
+  M = ((M % (2*Math.PI)) + 2*Math.PI) % (2*Math.PI);
+  const E = solveKepler(M, e);
+  const nu = trueAnomaly(E, e);
+  const r = a*(1 - e*Math.cos(E));
+  const x = r*Math.cos(nu), y = r*Math.sin(nu);
+  const h = Math.sqrt(GM*a*(1-e*e));
+  const vx = -(GM/h)*Math.sin(nu);
+  const vy = (GM/h)*(e+Math.cos(nu));
+  const speed = Math.sqrt(vx*vx+vy*vy);
+  const accelMag = GM/(r*r);
+  const ax = -accelMag*(x/r), ay = -accelMag*(y/r);
+  return {x,y,vx,vy,speed,ax,ay,accelMag,r,nu};
+}
+function apsisSpeeds(a,e){
+  return { vPeri: Math.sqrt(GM*(1+e)/(a*(1-e))), vApo: Math.sqrt(GM*(1-e)/(a*(1+e))) };
+}
+function apsisAccel(a,e){
+  return { aPeri: GM/((a*(1-e))**2), aApo: GM/((a*(1+e))**2) };
+}
+
+// Vector arrow lengths are normalized against ONE shared scale across all cases (not each
+// case's own perihelion/aphelion) so that a mild case (Mars) shows a mild visual difference
+// and an extreme case (Halley's) shows a dramatic one -- rather than every case being stretched
+// to fill the same pixel range regardless of its true ratio.
+function computeGlobalVectorRanges(){
+  let vMin=Infinity, vMax=-Infinity, aMin=Infinity, aMax=-Infinity;
+  CASE_ORDER.forEach(id=>{
+    const c = CASES[id];
+    const {vPeri, vApo} = apsisSpeeds(c.a, c.e);
+    const {aPeri, aApo} = apsisAccel(c.a, c.e);
+    vMin = Math.min(vMin, vApo); vMax = Math.max(vMax, vPeri);
+    aMin = Math.min(aMin, aApo); aMax = Math.max(aMax, aPeri);
+  });
+  return {vMin, vMax, aMin, aMax};
+}
+const GLOBAL_RANGES = computeGlobalVectorRanges();
+
+// ---------- helpers ----------
+function formatNum(x){
+  if(x===0) return '0';
+  if(Math.abs(x) >= 100) return x.toFixed(1);
+  if(Math.abs(x) >= 1) return x.toFixed(3);
+  return x.toFixed(4);
+}
+function niceStep(rawMax, targetTicks=5){
+  const raw = rawMax/targetTicks;
+  const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+  const norm = raw/mag;
+  let step;
+  if(norm < 1.5) step = 1;
+  else if(norm < 3.5) step = 2;
+  else if(norm < 7.5) step = 5;
+  else step = 10;
+  return step*mag;
+}
+function formatTick(x){
+  if(x===0) return '0';
+  return parseFloat(x.toFixed(3)).toString();
+}
+
+// ---------- screen geometry for orbit panel ----------
+let geo = { scale:1, sunX:300, sunY:300, ellCx:300, ellCy:300 };
+function computeGeometry(){
+  const c = currentCase();
+  const b = c.a*Math.sqrt(1-c.e*c.e);
+  const plotW = 460, plotH = 300, left = 70, top = 40;
+  const scale = Math.min(plotW/(2*c.a), plotH/(2*b));
+  geo.scale = scale;
+  geo.ellCx = left + plotW/2;
+  geo.ellCy = top + plotH/2;
+  const cDist = c.a*c.e*scale; // focus-to-center distance in pixels
+  geo.sunX = geo.ellCx + cDist;
+  geo.sunY = geo.ellCy;
+  geo.emptyFocusX = geo.ellCx - cDist;
+  geo.emptyFocusY = geo.ellCy;
+  geo.rx = c.a*scale;
+  geo.ry = b*scale;
+}
+function toScreen(x,y){ return { x: geo.sunX + x*geo.scale, y: geo.sunY - y*geo.scale }; }
+
+// ---------- case selector ----------
+const caseRow = document.getElementById('caseRow');
+CASE_ORDER.forEach(id=>{
+  const c = CASES[id];
+  const el = document.createElement('div');
+  el.className = 'pill' + (id===state.caseId ? ' active' : '');
+  el.dataset.id = id;
+  el.textContent = c.name;
+  el.addEventListener('click', ()=> selectCase(id));
+  caseRow.appendChild(el);
+});
+
+function selectCase(id){
+  state.caseId = id;
+  state.heccOverride = id==='hypothetical' ? 0.6 : undefined;
+  document.querySelectorAll('#caseRow .pill').forEach(p=>p.classList.toggle('active', p.dataset.id===id));
+  document.getElementById('eccControl').style.display = CASES[id].adjustableE ? 'flex' : 'none';
+  document.getElementById('eccSlider').value = state.heccOverride ?? CASES[id].e;
+  document.getElementById('eccVal').textContent = (state.heccOverride ?? CASES[id].e).toFixed(2);
+  state.rate = CASES[id].rate;
+  document.getElementById('speedSlider').max = CASES[id].speedMax;
+  document.getElementById('speedSlider').value = state.rate;
+  document.getElementById('speedLabel').textContent = state.rate.toFixed(2) + ' yr/sec';
+  state.elapsed = 0;
+  state.activeSweep = null;
+  state.autoQueue = [];
+  state.sweepRecords = [];
+  state.playing = true;
+  document.getElementById('playBtn').textContent = 'Pause';
+  setSweepControlsEnabled(true);
+  const c = CASES[id];
+  document.getElementById('caseNote').textContent = `a = ${formatNum(c.a)} AU, T = ${formatNum(c.T)} yr, e = ${(state.heccOverride ?? c.e).toFixed(3)}`;
+  computeGeometry();
+  buildOrbitStatic();
+  buildBars();
+  updateClock();
+}
+document.getElementById('eccSlider').addEventListener('input', e=>{
+  state.heccOverride = parseFloat(e.target.value);
+  document.getElementById('eccVal').textContent = state.heccOverride.toFixed(2);
+  state.activeSweep = null;
+  state.autoQueue = [];
+  state.sweepRecords = [];
+  state.elapsed = 0;
+  setSweepControlsEnabled(true);
+  const c = currentCase();
+  document.getElementById('caseNote').textContent = `a = ${formatNum(c.a)} AU, T = ${formatNum(c.T)} yr, e = ${c.e.toFixed(3)}`;
+  computeGeometry();
+  buildOrbitStatic();
+  buildBars();
+});
+
+// ---------- orbit panel: static elements (ellipse path, sun) ----------
+function buildOrbitStatic(){
+  const svg = document.getElementById('orbitSvg');
+  let html = '';
+  html += `<ellipse cx="${geo.ellCx}" cy="${geo.ellCy}" rx="${geo.rx}" ry="${geo.ry}" class="orbit-path"></ellipse>`;
+  html += `<circle cx="${geo.emptyFocusX}" cy="${geo.emptyFocusY}" r="4" fill="none" stroke="${getCssVar('--text-dim')}" stroke-width="1.4" stroke-dasharray="2 2"></circle>`;
+  html += `<text x="${geo.emptyFocusX}" y="${geo.emptyFocusY+22}" class="focus-label" text-anchor="middle">empty focus</text>`;
+  html += `<circle cx="${geo.sunX}" cy="${geo.sunY}" r="13" class="sun"></circle>`;
+  html += `<text x="${geo.sunX}" y="${geo.sunY-20}" class="focus-label" text-anchor="middle">Sun (focus)</text>`;
+  html += `<g id="persistedWedges"></g>`;
+  html += `<path id="activeWedge" fill-opacity="0.32" stroke-width="1.3" stroke-opacity="0.7" style="display:none;"></path>`;
+  html += `<path id="velLine" class="vec-line" stroke="${getCssVar('--accent')}" marker-end="url(#arrowVel)"></path>`;
+  html += `<path id="gravLine" class="vec-line" stroke="${getCssVar('--warn')}" marker-end="url(#arrowGrav)"></path>`;
+  html += `<circle id="bodyMarker" r="7" class="body-marker"></circle>`;
+  svg.innerHTML = `
+    <defs>
+      <marker id="arrowVel" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+        <path d="M0,0 L8,4 L0,8 Z" fill="${getCssVar('--accent')}"></path>
+      </marker>
+      <marker id="arrowGrav" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+        <path d="M0,0 L8,4 L0,8 Z" fill="${getCssVar('--warn')}"></path>
+      </marker>
+    </defs>
+  ` + html;
+}
+function getCssVar(name){
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+
+// ---------- vector scaling ----------
+function scaledLength(value, vMin, vMax, minPx=14, maxPx=70){
+  if(vMax - vMin < 1e-9) return (minPx+maxPx)/2;
+  const frac = Math.max(0, Math.min(1, (value-vMin)/(vMax-vMin)));
+  return minPx + (maxPx-minPx)*Math.sqrt(frac);
+}
+
+// ---------- per-frame orbit render ----------
+function renderOrbitFrame(){
+  const c = currentCase();
+  const s = orbitState(state.elapsed, c.a, c.T, c.e);
+  const p = toScreen(s.x, s.y);
+  const marker = document.getElementById('bodyMarker');
+  marker.setAttribute('cx', p.x);
+  marker.setAttribute('cy', p.y);
+
+  const velLine = document.getElementById('velLine');
+  const gravLine = document.getElementById('gravLine');
+
+  if(state.showVel){
+    const len = scaledLength(s.speed, GLOBAL_RANGES.vMin, GLOBAL_RANGES.vMax);
+    const ux = s.vx/s.speed, uy = s.vy/s.speed;
+    const ex = p.x + ux*len, ey = p.y - uy*len;
+    velLine.setAttribute('d', `M${p.x},${p.y} L${ex},${ey}`);
+    velLine.style.display = '';
+  } else velLine.style.display = 'none';
+
+  if(state.showGrav){
+    const len = scaledLength(s.accelMag, GLOBAL_RANGES.aMin, GLOBAL_RANGES.aMax);
+    const ux = s.ax/s.accelMag, uy = s.ay/s.accelMag;
+    const ex = p.x + ux*len, ey = p.y - uy*len;
+    gravLine.setAttribute('d', `M${p.x},${p.y} L${ex},${ey}`);
+    gravLine.style.display = '';
+  } else gravLine.style.display = 'none';
+
+  document.getElementById('liveReadout').innerHTML =
+    `<i>r</i> = <span class="val">${formatNum(s.r)}</span> AU &middot; <i>v</i> = <span class="val">${formatNum(s.speed)}</span> AU/yr &middot; `+
+    `gravity = <span class="val">${formatNum(s.accelMag)}</span> AU/yr&sup2;`;
+
+  updateActiveWedge();
+}
+
+document.getElementById('velToggle').addEventListener('change', e=>{ state.showVel = e.target.checked; });
+document.getElementById('gravToggle').addEventListener('change', e=>{ state.showGrav = e.target.checked; });
+
+// ---------- sweeps ----------
+document.querySelectorAll('[data-sweep]').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('[data-sweep]').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    state.sweepDivisor = parseInt(btn.dataset.sweep,10);
+  });
+});
+
+function setSweepControlsEnabled(enabled){
+  document.getElementById('startSweepBtn').disabled = !enabled;
+  document.getElementById('autoSweepBtn').disabled = !enabled;
+  document.getElementById('jumpPeriBtn').disabled = !enabled;
+  document.getElementById('jumpApoBtn').disabled = !enabled;
+}
+
+function startSweep(){
+  if(state.activeSweep) return;
+  const c = currentCase();
+  const dt = c.T/state.sweepDivisor;
+  state.activeSweep = buildSweepPoints(state.elapsed, state.elapsed+dt);
+  state.playing = true;
+  document.getElementById('playBtn').textContent = 'Pause';
+  setSweepControlsEnabled(false);
+}
+
+function buildSweepPoints(startT, endT){
+  const c = currentCase();
+  const N = 200;
+  const points = [];
+  for(let i=0;i<=N;i++){
+    const t = startT + (i/N)*(endT-startT);
+    const s = orbitState(t, c.a, c.T, c.e);
+    points.push({x:s.x, y:s.y, r:s.r});
+  }
+  const color = SWEEP_COLORS[state.sweepIdCounter % SWEEP_COLORS.length];
+  return { startT, endT, points, color };
+}
+
+// Auto sweep: one sweep centered on aphelion, one centered on perihelion, run back to back.
+function startCenteredSweep(centerT){
+  const c = currentCase();
+  const dt = c.T/state.sweepDivisor;
+  let startT = centerT - dt/2;
+  let endT = centerT + dt/2;
+  if(startT < 0){ startT += c.T; endT += c.T; } // keep elapsed display non-negative; physics is periodic so this is exact
+  state.elapsed = startT;
+  updateClock();
+  state.activeSweep = buildSweepPoints(startT, endT);
+  state.playing = true;
+  document.getElementById('playBtn').textContent = 'Pause';
+  setSweepControlsEnabled(false);
+}
+function processAutoQueue(){
+  if(state.autoQueue.length === 0){
+    setSweepControlsEnabled(true);
+    return;
+  }
+  const centerT = state.autoQueue.shift();
+  startCenteredSweep(centerT);
+}
+function startAutoSweep(){
+  if(state.activeSweep) return;
+  const c = currentCase();
+  state.sweepRecords = [];
+  state.autoQueue = [c.T/2, 0]; // aphelion first, then perihelion
+  processAutoQueue();
+}
+document.getElementById('autoSweepBtn').addEventListener('click', startAutoSweep);
+document.getElementById('startSweepBtn').addEventListener('click', startSweep);
+document.getElementById('clearSweepBtn').addEventListener('click', ()=>{
+  state.activeSweep = null;
+  state.autoQueue = [];
+  state.sweepRecords = [];
+  setSweepControlsEnabled(true);
+  buildBars();
+});
+
+function updateActiveWedge(){
+  const el = document.getElementById('activeWedge');
+  if(state.activeSweep){
+    const sw = state.activeSweep;
+    const frac = Math.max(0, Math.min(1, (state.elapsed - sw.startT)/(sw.endT - sw.startT)));
+    const count = Math.max(1, Math.floor(frac*(sw.points.length-1)));
+    const pts = sw.points.slice(0, count+1);
+    const d = wedgePathD(pts);
+    el.setAttribute('d', d);
+    el.setAttribute('fill', sw.color);
+    el.setAttribute('stroke', sw.color);
+    el.style.display = '';
+    if(frac >= 1) finalizeSweep(sw);
+  } else {
+    el.style.display = 'none';
+  }
+}
+function renderPersistedWedges(){
+  const layer = document.getElementById('persistedWedges');
+  if(!layer) return;
+  let html = '';
+  state.sweepRecords.forEach(rec=>{ html += wedgePathHtml(rec.points, rec.color, 0.22); });
+  layer.innerHTML = html;
+}
+function wedgePathD(pts){
+  let d = `M${geo.sunX},${geo.sunY} `;
+  pts.forEach(pt=>{
+    const sp = toScreen(pt.x, pt.y);
+    d += `L${sp.x.toFixed(1)},${sp.y.toFixed(1)} `;
+  });
+  d += 'Z';
+  return d;
+}
+function wedgePathHtml(pts, color, opacity){
+  if(pts.length < 2) return '';
+  return `<path d="${wedgePathD(pts)}" fill="${color}" fill-opacity="${opacity}" stroke="${color}" stroke-width="1.3" stroke-opacity="0.7"></path>`;
+}
+function finalizeSweep(sw){
+  let area = 0;
+  for(let i=0;i<sw.points.length-1;i++){
+    area += sw.points[i].x*sw.points[i+1].y - sw.points[i+1].x*sw.points[i].y;
+  }
+  area = Math.abs(area)/2;
+  const meanR = sw.points.reduce((s,p)=>s+p.r,0)/sw.points.length;
+  state.sweepRecords.push({ area, meanR, color: sw.color, id: state.sweepIdCounter, points: sw.points });
+  state.sweepIdCounter++;
+  if(state.sweepRecords.length > 3) state.sweepRecords.shift();
+  state.activeSweep = null;
+  if(state.autoQueue.length > 0){
+    processAutoQueue();
+  } else {
+    setSweepControlsEnabled(true);
+  }
+  buildBars();
+}
+
+// ---------- bar chart ----------
+function buildBars(){
+  renderPersistedWedges();
+  const svg = document.getElementById('barSvg');
+  const left=70, right=560, top=50, bottom=480;
+  const plotW = right-left, plotH = bottom-top;
+  let html = `<line x1="${left}" y1="${bottom}" x2="${right}" y2="${bottom}" class="axis-line"></line>`;
+  html += `<line x1="${left}" y1="${top}" x2="${left}" y2="${bottom}" class="axis-line"></line>`;
+
+  const recs = state.sweepRecords;
+  const maxArea = recs.length ? Math.max(...recs.map(r=>r.area))*1.25 : 1;
+  const step = niceStep(maxArea);
+  const axisMax = Math.ceil(maxArea/step)*step;
+  for(let t=0; t<=axisMax+1e-9; t+=step){
+    const py = bottom - (t/axisMax)*plotH;
+    html += `<line x1="${left}" y1="${py}" x2="${right}" y2="${py}" class="grid-line"></line>`;
+    html += `<text x="${left-8}" y="${py+3}" class="tick-label" text-anchor="end">${formatTick(t)}</text>`;
+  }
+  html += `<text x="20" y="${(top+bottom)/2}" class="axis-title" text-anchor="middle" transform="rotate(-90 20 ${(top+bottom)/2})">area swept (AU&sup2;)</text>`;
+
+  const slotW = plotW/3;
+  for(let i=0;i<3;i++){
+    const slotX = left + i*slotW + slotW/2;
+    if(i < recs.length){
+      const rec = recs[i];
+      const barH = (rec.area/axisMax)*plotH;
+      const barW = Math.min(80, slotW*0.5);
+      const barTop = bottom - barH;
+      html += `<rect x="${slotX-barW/2}" y="${barTop}" width="${barW}" height="${barH}" fill="${rec.color}" fill-opacity="0.75" stroke="${rec.color}" rx="3"></rect>`;
+      html += `<text x="${slotX}" y="${barTop-10}" class="bar-label">${formatNum(rec.area)}</text>`;
+      html += `<text x="${slotX}" y="${bottom+18}" class="bar-sub">sweep ${i+1}</text>`;
+      html += `<text x="${slotX}" y="${bottom+32}" class="bar-sub">r&approx;${formatNum(rec.meanR)} AU</text>`;
+    } else {
+      html += `<text x="${slotX}" y="${bottom+18}" class="bar-sub">sweep ${i+1}</text>`;
+    }
+  }
+  svg.innerHTML = html;
+
+  const c = currentCase();
+  const h = Math.sqrt(GM*c.a*(1-c.e*c.e));
+  document.getElementById('dadtReadout').innerHTML =
+    `instantaneous areal velocity &middot; d<i>A</i>/d<i>t</i> = <span class="val">${formatNum(h/2)}</span> AU&sup2;/yr — constant everywhere on this orbit`;
+  document.getElementById('barReadout').textContent = recs.length
+    ? `${recs.length} sweep${recs.length>1?'s':''} shown — compare the bar heights above.`
+    : 'Run a sweep to compare areas.';
+}
+
+// ---------- jump buttons ----------
+document.getElementById('jumpPeriBtn').addEventListener('click', ()=>{
+  state.elapsed = 0;
+  state.playing = false;
+  document.getElementById('playBtn').textContent = 'Play';
+  state.activeSweep = null;
+  state.autoQueue = [];
+  setSweepControlsEnabled(true);
+  updateClock();
+});
+document.getElementById('jumpApoBtn').addEventListener('click', ()=>{
+  const c = currentCase();
+  state.elapsed = c.T/2;
+  state.playing = false;
+  document.getElementById('playBtn').textContent = 'Play';
+  state.activeSweep = null;
+  state.autoQueue = [];
+  setSweepControlsEnabled(true);
+  updateClock();
+});
+
+// ---------- animation controls ----------
+const playBtn = document.getElementById('playBtn');
+const speedSlider = document.getElementById('speedSlider');
+const speedLabel = document.getElementById('speedLabel');
+const clockLabel = document.getElementById('clockLabel');
+
+playBtn.addEventListener('click', ()=>{
+  state.playing = !state.playing;
+  playBtn.textContent = state.playing ? 'Pause' : 'Play';
+});
+document.getElementById('resetBtn').addEventListener('click', ()=>{
+  state.elapsed = 0;
+  state.activeSweep = null;
+  state.autoQueue = [];
+  state.sweepRecords = [];
+  setSweepControlsEnabled(true);
+  buildBars();
+  updateClock();
+});
+speedSlider.addEventListener('input', e=>{
+  state.rate = parseFloat(e.target.value);
+  speedLabel.textContent = state.rate.toFixed(2) + ' yr/sec';
+});
+function updateClock(){ clockLabel.textContent = state.elapsed.toFixed(2) + ' yr'; }
+
+let lastTs = null;
+function frame(ts){
+  if(lastTs===null) lastTs = ts;
+  const dt = (ts-lastTs)/1000;
+  lastTs = ts;
+  if(state.playing){
+    state.elapsed += dt*state.rate;
+    updateClock();
+  }
+  renderOrbitFrame();
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+// ---------- init ----------
+selectCase('hypothetical');
+</script>
+</body>
+</html>
